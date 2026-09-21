@@ -136,22 +136,107 @@
       gap: 8px;
     }
 
-    .role-badge {
-      background: rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      padding: 4px 10px;
+    .header-login-btn {
+      background: #FFD54F;
+      color: #1B5E20;
+      border: none;
+      padding: 6px 14px;
       border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 800;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 4px;
-      transition: background 0.2s;
+      gap: 5px;
+      transition: transform 0.15s, background 0.2s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
 
-    .role-badge:hover {
-      background: rgba(255, 255, 255, 0.3);
+    .header-login-btn:active {
+      transform: scale(0.95);
+    }
+
+    .header-user-avatar {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: white;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Admin Protected Bar */
+    .admin-protected-banner {
+      background: #B91C1C;
+      color: white;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .admin-protected-banner button {
+      background: white;
+      color: #B91C1C;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* Instamart Floating Sticky Cart Bar */
+    .floating-cart-bar {
+      display: none;
+      position: fixed;
+      bottom: 74px;
+      left: 16px;
+      right: 16px;
+      max-width: 648px;
+      margin: 0 auto;
+      background: #1B5E20;
+      color: white;
+      border-radius: 12px;
+      padding: 12px 18px;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 65;
+      box-shadow: 0 8px 24px rgba(27, 94, 32, 0.4);
+      cursor: pointer;
+      animation: slideUp 0.25s ease-out;
+    }
+
+    .floating-cart-bar .cart-summary {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .floating-cart-bar .cart-count {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      opacity: 0.9;
+    }
+
+    .floating-cart-bar .cart-price {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .floating-cart-bar .cart-action {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 800;
     }
 
     .search-box {
@@ -772,27 +857,31 @@
       <span id="toast-text">Message</span>
     </div>
 
-    <!-- Top Navigation Header -->
-    <header>
+    <!-- Admin Protected Active Mode Banner -->
+    <div id="admin-banner" class="admin-protected-banner" style="display:none;">
+      <span id="admin-banner-text">🔐 Store Admin Management</span>
+      <button onclick="exitAdmin()">Exit Admin</button>
+    </div>
+
+    <!-- Top Navigation Header (Instamart Style) -->
+    <header id="main-header">
       <div class="header-top">
         <div class="brand-group" onclick="navigateTo('/')">
-          <div class="brand-logo">
-            <svg viewBox="0 0 512 512" fill="none">
-              <rect width="512" height="512" rx="100" fill="#1B5E20"/>
-              <path d="M156 180 C156 124 200 80 256 80 C312 80 356 124 356 180" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round"/>
-              <rect x="116" y="180" width="280" height="240" rx="36" fill="#FFFFFF"/>
-              <circle cx="256" cy="300" r="40" fill="#E65100"/>
-            </svg>
+          <div class="brand-logo" style="width: 40px; height: 40px; border-radius: 10px; background: #FFD54F; display:flex; align-items:center; justify-content:center;">
+            <span style="font-size: 22px;">⚡</span>
           </div>
           <div class="brand-text">
-            <h1>GharKirana</h1>
-            <p>📍 Baneshwor, Kathmandu ▾</p>
+            <div style="display:flex; align-items:center; gap: 6px;">
+              <span style="background:#FFEB3B; color:#1B5E20; padding:2px 7px; border-radius:12px; font-size:10px; font-weight:900; letter-spacing:0.5px;">⚡ 10 MINS</span>
+              <h1 style="font-size: 16px; font-weight: 800; letter-spacing:-0.4px; margin:0;">GharKirana</h1>
+            </div>
+            <p onclick="openLocationPicker()" style="cursor:pointer; margin-top:2px;">📍 Baneshwor, Kathmandu ▾</p>
           </div>
         </div>
 
         <div class="header-actions">
-          <div class="role-badge" onclick="openRoleSwitcher()" title="Change Role">
-            <span id="role-badge-text">Customer</span> ▾
+          <div id="header-auth-container">
+            <!-- Rendered by updateAuthUi() -->
           </div>
         </div>
       </div>
@@ -809,24 +898,35 @@
       <!-- Injected by router -->
     </main>
 
-    <!-- Bottom Navigation Bar for Mobile-first Experience -->
+    <!-- Instamart Floating Sticky Cart Bar -->
+    <div id="floating-cart-bar" class="floating-cart-bar" onclick="navigateTo('/cart')">
+      <div class="cart-summary">
+        <span class="cart-count" id="fc-count">0 ITEMS</span>
+        <span class="cart-price" id="fc-price">Rs. 0</span>
+      </div>
+      <div class="cart-action">
+        <span>View Cart</span>
+        <span>➔</span>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation Bar for Customers (No Admin or Portal exposed) -->
     <nav class="bottom-nav">
       <a class="nav-item" id="nav-home" onclick="navigateTo('/')">
         <span class="icon">🏠</span>
         <span>Home</span>
       </a>
-      <a class="nav-item" id="nav-cart" onclick="navigateTo('/cart')">
-        <span class="icon">🛒</span>
-        <span>Cart</span>
-        <span class="nav-badge" id="cart-counter" style="display:none;">0</span>
+      <a class="nav-item" id="nav-categories" onclick="navigateTo('/categories')">
+        <span class="icon">🍱</span>
+        <span>Categories</span>
       </a>
       <a class="nav-item" id="nav-orders" onclick="navigateTo('/orders')">
-        <span class="icon">📦</span>
+        <span class="icon">🛍️</span>
         <span>Orders</span>
       </a>
-      <a class="nav-item" id="nav-portal" onclick="handlePortalClick()">
-        <span class="icon" id="portal-icon">⚙️</span>
-        <span id="portal-label">Portal</span>
+      <a class="nav-item" id="nav-account" onclick="navigateTo('/account')">
+        <span class="icon">👤</span>
+        <span id="nav-account-label">Account</span>
       </a>
     </nav>
 
@@ -975,6 +1075,34 @@
         saveProducts();
       }
 
+      // Load user
+      const savedUser = localStorage.getItem('gk_user');
+      if (savedUser) {
+        try {
+          APP_STATE.user = JSON.parse(savedUser);
+        } catch(e) {
+          APP_STATE.user = null;
+        }
+      }
+
+      // Load saved addresses
+      const savedAddrs = localStorage.getItem('gk_addresses');
+      if (savedAddrs) {
+        try {
+          APP_STATE.savedAddresses = JSON.parse(savedAddrs);
+        } catch(e) {
+          APP_STATE.savedAddresses = [
+            { id: 'addr_1', label: 'Home', address: 'Baneshwor Chowk, House #42', city: 'Kathmandu' },
+            { id: 'addr_2', label: 'Office', address: 'Putalisadak, Star Mall 3rd Floor', city: 'Kathmandu' }
+          ];
+        }
+      } else {
+        APP_STATE.savedAddresses = [
+          { id: 'addr_1', label: 'Home', address: 'Baneshwor Chowk, House #42', city: 'Kathmandu' },
+          { id: 'addr_2', label: 'Office', address: 'Putalisadak, Star Mall 3rd Floor', city: 'Kathmandu' }
+        ];
+      }
+
       // Load orders
       const savedOrders = localStorage.getItem('gk_orders');
       if (savedOrders) {
@@ -994,7 +1122,21 @@
           APP_STATE.cart = {};
         }
       }
+      updateAuthUi();
       updateCartBadge();
+    }
+
+    function saveUser() {
+      if (APP_STATE.user) {
+        localStorage.setItem('gk_user', JSON.stringify(APP_STATE.user));
+      } else {
+        localStorage.removeItem('gk_user');
+      }
+      updateAuthUi();
+    }
+
+    function saveAddresses() {
+      localStorage.setItem('gk_addresses', JSON.stringify(APP_STATE.savedAddresses));
     }
 
     function saveProducts() {
@@ -1072,13 +1214,16 @@
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       if (path === '/' || path === '/home') {
         document.getElementById('nav-home')?.classList.add('active');
-      } else if (path === '/cart') {
-        document.getElementById('nav-cart')?.classList.add('active');
+      } else if (path === '/categories') {
+        document.getElementById('nav-categories')?.classList.add('active');
       } else if (path === '/orders') {
         document.getElementById('nav-orders')?.classList.add('active');
-      } else if (path === '/admin' || path === '/rider') {
-        document.getElementById('nav-portal')?.classList.add('active');
+      } else if (path === '/account') {
+        document.getElementById('nav-account')?.classList.add('active');
       }
+
+      updateAuthUi();
+      updateCartBadge();
 
       // Router Switch
       const appView = document.getElementById('app-view');
@@ -1086,14 +1231,26 @@
 
       if (path === '/' || path === '/home') {
         renderCustomerHome(appView);
+      } else if (path === '/categories') {
+        renderCategoriesView(appView);
       } else if (path === '/cart') {
         renderCartView(appView);
       } else if (path === '/orders') {
         renderOrdersView(appView);
+      } else if (path === '/account') {
+        renderAccountView(appView);
       } else if (path === '/admin') {
-        renderAdminDashboard(appView);
+        if (APP_STATE.role !== 'admin') {
+          renderAccessDenied(appView, 'admin');
+        } else {
+          renderAdminDashboard(appView);
+        }
       } else if (path === '/rider') {
-        renderRiderDashboard(appView);
+        if (APP_STATE.role !== 'rider') {
+          renderAccessDenied(appView, 'rider');
+        } else {
+          renderRiderDashboard(appView);
+        }
       } else if (path.startsWith('/product')) {
         const urlParams = new URLSearchParams(window.location.search);
         const prodId = urlParams.get('id');
@@ -1139,21 +1296,27 @@
       });
 
       container.innerHTML = `
-        <!-- Hero Delivery Banner -->
+        <!-- Instamart Express Delivery Banner -->
         <div class="hero-banner">
           <div class="hero-content">
-            <span class="hero-badge">⚡ 30-Min Fast Delivery</span>
-            <h2>Fresh Kirana to Your Kitchen</h2>
-            <p>Kathmandu Valley • Free delivery on orders over Rs. 499</p>
+            <span class="hero-badge">⚡ 10-15 MINS EXPRESS</span>
+            <h2>Fresh Groceries in Minutes</h2>
+            <p>Kathmandu Valley • Free delivery over Rs. 399</p>
           </div>
-          <div class="hero-graphic">🥦</div>
+          <div class="hero-graphic">⚡🛍️</div>
+        </div>
+
+        <!-- Super Saver Flash Deal Ticker -->
+        <div style="background: linear-gradient(90deg, #FEF3C7, #FDE68A); border: 1px solid #FCD34D; border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: #92400E;">
+          <span>🎉 Instamart Daily Deal: Basmati Rice Rs. 690 (Save Rs. 70)</span>
+          <span style="background: #D97706; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px;">TODAY</span>
         </div>
 
         <!-- Categories Row -->
         <div>
           <div class="section-title">
             <span>Categories</span>
-            <span style="font-size: 12px; color: var(--primary); font-weight: 600; cursor:pointer;" onclick="setCategory('all')">View All</span>
+            <span style="font-size: 12px; color: var(--primary); font-weight: 700; cursor:pointer;" onclick="navigateTo('/categories')">See All ➔</span>
           </div>
           <div class="categories-row" style="margin-top: 8px;">
             ${APP_STATE.categories.map(c => `
@@ -1290,12 +1453,34 @@
 
     function updateCartBadge() {
       const badge = document.getElementById('cart-counter');
+      const floatingBar = document.getElementById('floating-cart-bar');
+      const fcCount = document.getElementById('fc-count');
+      const fcPrice = document.getElementById('fc-price');
+
       const totalCount = Object.values(APP_STATE.cart).reduce((sum, q) => sum + q, 0);
-      if (totalCount > 0) {
-        badge.innerText = totalCount;
-        badge.style.display = 'flex';
-      } else {
-        badge.style.display = 'none';
+      let totalPrice = 0;
+      Object.entries(APP_STATE.cart).forEach(([id, qty]) => {
+        const p = APP_STATE.products.find(prod => prod.id === id);
+        if (p) totalPrice += (p.discountPrice || p.price) * qty;
+      });
+
+      if (badge) {
+        if (totalCount > 0) {
+          badge.innerText = totalCount;
+          badge.style.display = 'flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+
+      if (floatingBar && fcCount && fcPrice) {
+        if (totalCount > 0 && APP_STATE.currentRoute !== '/cart') {
+          fcCount.innerText = `${totalCount} ITEM${totalCount > 1 ? 'S' : ''}`;
+          fcPrice.innerText = `Rs. ${totalPrice}`;
+          floatingBar.style.display = 'flex';
+        } else {
+          floatingBar.style.display = 'none';
+        }
       }
     }
 
@@ -1622,47 +1807,455 @@
       modal.style.display = 'flex';
     }
 
-    function openRoleSwitcher() {
+    /* ==========================================================================
+       Authentication & Security (Customer Login & Protected Admin/Rider)
+       ========================================================================== */
+    function updateAuthUi() {
+      const container = document.getElementById('header-auth-container');
+      const accountLabel = document.getElementById('nav-account-label');
+      const adminBanner = document.getElementById('admin-banner');
+      const bannerText = document.getElementById('admin-banner-text');
+
+      if (adminBanner && bannerText) {
+        if (APP_STATE.role === 'admin') {
+          adminBanner.style.display = 'flex';
+          bannerText.innerText = '🔐 Store Admin Management Active';
+        } else if (APP_STATE.role === 'rider') {
+          adminBanner.style.display = 'flex';
+          bannerText.innerText = '🛵 Rider Delivery Portal Active';
+        } else {
+          adminBanner.style.display = 'none';
+        }
+      }
+
+      if (!container) return;
+
+      if (APP_STATE.user) {
+        const firstName = APP_STATE.user.name.split(' ')[0] || 'User';
+        container.innerHTML = `
+          <div class="header-user-avatar" onclick="navigateTo('/account')">
+            <span>👤</span>
+            <span>${firstName}</span>
+          </div>
+        `;
+        if (accountLabel) accountLabel.innerText = firstName;
+      } else {
+        container.innerHTML = `
+          <button class="header-login-btn" onclick="openLoginModal()">
+            <span>⚡</span>
+            <span>Login</span>
+          </button>
+        `;
+        if (accountLabel) accountLabel.innerText = 'Account';
+      }
+    }
+
+    let currentAuthTab = 'login';
+
+    function openLoginModal(tab = 'login') {
+      currentAuthTab = tab;
       const modal = document.getElementById('modal-overlay');
       const content = document.getElementById('modal-content');
+      
       content.innerHTML = `
-        <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 12px;">Switch User Role</h3>
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-          Experience all three workflows designed for Nepal grocery operations:
-        </p>
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          <button class="cat-chip ${APP_STATE.role === 'customer' ? 'active' : ''}" onclick="setRole('customer')">
-            🛒 Customer View (Browse, Order, Track)
+        <div style="text-align: center; margin-bottom: 14px;">
+          <div style="width: 48px; height: 48px; border-radius: 12px; background: #FFD54F; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(255,213,79,0.3);">
+            ⚡
+          </div>
+          <h3 style="font-size: 18px; font-weight: 900; margin-top: 8px; color: var(--text);">GharKirana Instamart</h3>
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">⚡ 10-15 Min Kirana Delivery in Nepal</p>
+        </div>
+
+        <div style="display: flex; border-bottom: 2px solid var(--border); margin-bottom: 16px;">
+          <button id="auth-tab-login" onclick="switchAuthTab('login')" style="flex:1; padding: 10px; border:none; background:none; font-weight:800; font-size:13px; color:${tab === 'login' ? 'var(--primary)' : 'var(--text-muted)'}; border-bottom: 2px solid ${tab === 'login' ? 'var(--primary)' : 'transparent'}; cursor:pointer;">
+            Log In
           </button>
-          <button class="cat-chip ${APP_STATE.role === 'admin' ? 'active' : ''}" onclick="setRole('admin')">
-            ⚙️ Store Admin (Stock, Prices, Orders)
+          <button id="auth-tab-signup" onclick="switchAuthTab('signup')" style="flex:1; padding: 10px; border:none; background:none; font-weight:800; font-size:13px; color:${tab === 'signup' ? 'var(--primary)' : 'var(--text-muted)'}; border-bottom: 2px solid ${tab === 'signup' ? 'var(--primary)' : 'transparent'}; cursor:pointer;">
+            Sign Up
           </button>
-          <button class="cat-chip ${APP_STATE.role === 'rider' ? 'active' : ''}" onclick="setRole('rider')">
-            🛵 Delivery Rider (Tasks, Drop Navigation)
+        </div>
+
+        <div id="auth-tab-content">
+          ${getAuthTabHtml(tab)}
+        </div>
+
+        <div style="margin-top: 14px; border-top: 1px dashed var(--border); padding-top: 12px; text-align: center;">
+          <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Instant Demo Testing:</p>
+          <button onclick="demoLogin()" style="width: 100%; background: #F0FDF4; border: 1px solid #86EFAC; color: #166534; padding: 9px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer;">
+            ⚡ 1-Tap Quick Login as Aayush Sharma
           </button>
         </div>
       `;
       modal.style.display = 'flex';
     }
 
-    function setRole(newRole) {
-      APP_STATE.role = newRole;
-      document.getElementById('role-badge-text').innerText = newRole.toUpperCase();
-      document.getElementById('portal-label').innerText = newRole === 'admin' ? 'Admin' : (newRole === 'rider' ? 'Rider' : 'Portal');
-      closeModal();
-      if (newRole === 'admin') navigateTo('/admin');
-      else if (newRole === 'rider') navigateTo('/rider');
-      else navigateTo('/');
+    function switchAuthTab(tab) {
+      currentAuthTab = tab;
+      const tabLogin = document.getElementById('auth-tab-login');
+      const tabSignup = document.getElementById('auth-tab-signup');
+      const content = document.getElementById('auth-tab-content');
+      if (tabLogin && tabSignup && content) {
+        tabLogin.style.color = tab === 'login' ? 'var(--primary)' : 'var(--text-muted)';
+        tabLogin.style.borderBottom = tab === 'login' ? '2px solid var(--primary)' : 'transparent';
+        tabSignup.style.color = tab === 'signup' ? 'var(--primary)' : 'var(--text-muted)';
+        tabSignup.style.borderBottom = tab === 'signup' ? '2px solid var(--primary)' : 'transparent';
+        content.innerHTML = getAuthTabHtml(tab);
+      }
     }
 
-    function handlePortalClick() {
-      if (APP_STATE.role === 'admin') {
-        navigateTo('/admin');
-      } else if (APP_STATE.role === 'rider') {
-        navigateTo('/rider');
+    function getAuthTabHtml(tab) {
+      if (tab === 'login') {
+        return `
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Mobile Number</label>
+              <div style="display: flex; gap: 6px; margin-top: 4px;">
+                <span style="background: #F1F5F9; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 13px; font-weight: 700;">🇳🇵 +977</span>
+                <input type="tel" id="login-phone" placeholder="9841234567" value="9841234567" style="flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;" />
+              </div>
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">OTP Verification Code</label>
+              <input type="text" id="login-otp" placeholder="Enter 1234" value="1234" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; margin-top: 4px;" />
+              <span style="font-size: 10px; color: var(--text-muted);">Demo test OTP: <b>1234</b></span>
+            </div>
+            <button class="primary-btn" onclick="handleLoginSubmit()" style="margin-top: 4px;">
+              Log In to GharKirana
+            </button>
+          </div>
+        `;
       } else {
-        openRoleSwitcher();
+        return `
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Full Name</label>
+              <input type="text" id="signup-name" placeholder="e.g. Suman Thapa" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; margin-top: 4px;" />
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Mobile Number</label>
+              <div style="display: flex; gap: 6px; margin-top: 4px;">
+                <span style="background: #F1F5F9; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 13px; font-weight: 700;">🇳🇵 +977</span>
+                <input type="tel" id="signup-phone" placeholder="98XXXXXXXX" style="flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;" />
+              </div>
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Delivery Address</label>
+              <input type="text" id="signup-address" placeholder="e.g. Baneshwor, Kathmandu" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; margin-top: 4px;" />
+            </div>
+            <button class="primary-btn" onclick="handleSignupSubmit()" style="margin-top: 4px;">
+              Create Free Account
+            </button>
+          </div>
+        `;
       }
+    }
+
+    function handleLoginSubmit() {
+      const phone = document.getElementById('login-phone').value.trim();
+      const otp = document.getElementById('login-otp').value.trim();
+      if (!phone) {
+        showToast('Please enter your Nepal phone number');
+        return;
+      }
+      APP_STATE.user = {
+        id: 'cust_' + Date.now(),
+        name: 'Aayush Sharma',
+        phone: '+977 ' + phone.replace('+977', '').trim(),
+        email: 'aayush.sharma@example.np',
+        city: 'Kathmandu'
+      };
+      saveUser();
+      closeModal();
+      showToast('Welcome back, ' + APP_STATE.user.name + '!');
+      if (APP_STATE.currentRoute === '/account') renderAccountView(document.getElementById('app-view'));
+    }
+
+    function handleSignupSubmit() {
+      const name = document.getElementById('signup-name').value.trim();
+      const phone = document.getElementById('signup-phone').value.trim();
+      const address = document.getElementById('signup-address').value.trim();
+      if (!name || !phone) {
+        showToast('Please fill in your name and phone');
+        return;
+      }
+      APP_STATE.user = {
+        id: 'cust_' + Date.now(),
+        name,
+        phone: '+977 ' + phone.replace('+977', '').trim(),
+        email: `${phone}@gharkirana.np`,
+        city: address || 'Kathmandu'
+      };
+      if (address) {
+        APP_STATE.savedAddresses.unshift({
+          id: 'addr_' + Date.now(),
+          label: 'Home',
+          address,
+          city: 'Kathmandu'
+        });
+        saveAddresses();
+      }
+      saveUser();
+      closeModal();
+      showToast('Account created! Welcome to GharKirana, ' + name + '!');
+      if (APP_STATE.currentRoute === '/account') renderAccountView(document.getElementById('app-view'));
+    }
+
+    function demoLogin() {
+      APP_STATE.user = {
+        id: 'cust_aayush',
+        name: 'Aayush Sharma',
+        phone: '+977 9841234567',
+        email: 'aayush@gharkirana.np',
+        city: 'Baneshwor, Kathmandu'
+      };
+      saveUser();
+      closeModal();
+      showToast('Logged in as Aayush Sharma');
+      if (APP_STATE.currentRoute === '/account') renderAccountView(document.getElementById('app-view'));
+    }
+
+    function logoutUser() {
+      APP_STATE.user = null;
+      saveUser();
+      showToast('Logged out successfully');
+      navigateTo('/');
+    }
+
+    /* Protected Staff PIN Dialog */
+    function promptAdminPin(targetRole = 'admin') {
+      const modal = document.getElementById('modal-overlay');
+      const content = document.getElementById('modal-content');
+      
+      content.innerHTML = `
+        <div style="text-align: center; margin-bottom: 14px;">
+          <div style="font-size: 38px;">🔐</div>
+          <h3 style="font-size: 17px; font-weight: 800; margin-top: 8px;">
+            ${targetRole === 'admin' ? 'Store Administrator Login' : 'Delivery Rider Portal Login'}
+          </h3>
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+            This panel is restricted to store operations. Customers cannot access without security PIN.
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+          <div>
+            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Enter Security PIN</label>
+            <input type="password" id="admin-pin-input" placeholder="PIN: ${targetRole === 'admin' ? '1234' : '5678'}" maxlength="8" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 18px; font-weight: 800; text-align: center; letter-spacing: 4px;" />
+          </div>
+          <div id="pin-error-msg" style="display:none; color: var(--danger); font-size: 12px; font-weight: 700; text-align: center;"></div>
+          <button class="primary-btn" onclick="verifyAdminPin('${targetRole}')">
+            Verify & Enter
+          </button>
+        </div>
+      `;
+      modal.style.display = 'flex';
+      setTimeout(() => document.getElementById('admin-pin-input')?.focus(), 150);
+    }
+
+    function verifyAdminPin(targetRole) {
+      const pin = document.getElementById('admin-pin-input').value.trim();
+      const errorEl = document.getElementById('pin-error-msg');
+      
+      const validPins = targetRole === 'admin' ? ['1234', '9841'] : ['5678', 'rider123'];
+      if (validPins.includes(pin)) {
+        APP_STATE.role = targetRole;
+        closeModal();
+        showToast(`Welcome to ${targetRole === 'admin' ? 'Store Admin' : 'Rider'} Portal!`);
+        updateAuthUi();
+        if (targetRole === 'admin') navigateTo('/admin');
+        else navigateTo('/rider');
+      } else {
+        errorEl.style.display = 'block';
+        errorEl.innerText = 'Access Denied: Invalid Security PIN!';
+      }
+    }
+
+    function exitAdmin() {
+      APP_STATE.role = 'customer';
+      updateAuthUi();
+      showToast('Returned to Customer Store');
+      navigateTo('/');
+    }
+
+    function renderAccessDenied(container, role) {
+      container.innerHTML = `
+        <div class="not-found-card" style="padding: 40px 20px;">
+          <span style="font-size: 56px;">🔐</span>
+          <h2 style="font-size: 18px; font-weight: 800; margin-top: 10px;">Store Staff Authorization Required</h2>
+          <p style="color: var(--text-muted); font-size: 13px; max-width: 340px; margin: 8px auto 16px;">
+            Customers cannot view the store administration or rider dispatch portal. Please enter the authorized PIN to proceed.
+          </p>
+          <button class="primary-btn" onclick="promptAdminPin('${role}')" style="max-width: 240px; margin: 0 auto;">
+            Enter Security PIN
+          </button>
+          <button onclick="navigateTo('/')" style="margin-top: 12px; background: none; border: none; color: var(--primary); font-weight: 700; font-size: 13px; cursor: pointer;">
+            ← Return to Customer Store
+          </button>
+        </div>
+      `;
+    }
+
+    function renderAccountView(container) {
+      const user = APP_STATE.user;
+      container.innerHTML = `
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow);">
+          ${user ? `
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="width: 52px; height: 52px; border-radius: 50%; background: #DCFCE7; color: #166534; font-size: 24px; font-weight: 800; display: flex; align-items: center; justify-content: center;">
+                ${user.name.charAt(0).toUpperCase()}
+              </div>
+              <div style="flex: 1;">
+                <h3 style="font-size: 16px; font-weight: 800;">${user.name}</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">📞 ${user.phone}</p>
+                <p style="font-size: 11px; color: var(--primary); font-weight: 700; margin-top: 2px;">⚡ GharKirana Fast Delivery Member</p>
+              </div>
+              <button onclick="logoutUser()" style="background: none; border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer;">
+                Log Out
+              </button>
+            </div>
+          ` : `
+            <div style="text-align: center; padding: 16px 0;">
+              <div style="font-size: 40px; margin-bottom: 8px;">👤</div>
+              <h3 style="font-size: 16px; font-weight: 800;">Welcome to GharKirana</h3>
+              <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 14px;">Log in to access your fast orders, saved addresses & checkout</p>
+              <button class="primary-btn" onclick="openLoginModal()" style="max-width: 220px; margin: 0 auto;">
+                ⚡ Log In / Sign Up
+              </button>
+            </div>
+          `}
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="dashboard-stats" style="margin-top: 12px;">
+          <div class="stat-card" onclick="navigateTo('/orders')" style="cursor: pointer;">
+            <div class="val">${APP_STATE.orders.length}</div>
+            <div class="lbl">Total Orders</div>
+          </div>
+          <div class="stat-card" onclick="navigateTo('/cart')" style="cursor: pointer;">
+            <div class="val">${Object.values(APP_STATE.cart).reduce((s, q) => s + q, 0)}</div>
+            <div class="lbl">Cart Items</div>
+          </div>
+          <div class="stat-card">
+            <div class="val">⚡ 10m</div>
+            <div class="lbl">Avg Speed</div>
+          </div>
+        </div>
+
+        <!-- Saved Addresses -->
+        <div style="margin-top: 16px;">
+          <div class="section-title">
+            <span>Saved Delivery Addresses</span>
+            <span style="font-size: 12px; color: var(--primary); font-weight: 700; cursor: pointer;" onclick="openAddAddressModal()">+ Add New</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+            ${APP_STATE.savedAddresses.map(a => `
+              <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <span style="font-size: 11px; font-weight: 800; background: #F1F5F9; padding: 2px 6px; border-radius: 4px;">${a.label}</span>
+                  <p style="font-size: 13px; font-weight: 600; margin-top: 4px;">${a.address}</p>
+                  <p style="font-size: 11px; color: var(--text-muted);">${a.city}</p>
+                </div>
+                <span style="color: var(--primary); font-size: 16px;">✓</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Store Operations & Staff Management (Protected) -->
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border);">
+          <p style="font-size: 12px; font-weight: 800; color: var(--text-muted); margin-bottom: 8px;">Store Operations & Staff (Restricted)</p>
+          <div style="display: flex; gap: 8px;">
+            <button onclick="promptAdminPin('admin')" style="flex: 1; padding: 10px; background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span>🔐</span>
+              <span>Store Admin</span>
+            </button>
+            <button onclick="promptAdminPin('rider')" style="flex: 1; padding: 10px; background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span>🛵</span>
+              <span>Rider Portal</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCategoriesView(container) {
+      container.innerHTML = `
+        <div class="section-title">
+          <span>All Grocery Categories</span>
+          <span style="font-size: 12px; color: var(--text-muted);">${APP_STATE.products.length} Products</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px;">
+          ${APP_STATE.categories.map(c => {
+            const count = c.id === 'all' ? APP_STATE.products.length : APP_STATE.products.filter(p => p.categoryId === c.id).length;
+            return `
+              <div onclick="setCategory('${c.id}'); navigateTo('/');" style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; transition: transform 0.15s, border-color 0.2s; box-shadow: var(--shadow);">
+                <div style="font-size: 40px; margin-bottom: 8px;">${c.emoji}</div>
+                <h4 style="font-size: 14px; font-weight: 800; color: var(--text);">${c.name}</h4>
+                <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${count} items</p>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function openAddAddressModal() {
+      const modal = document.getElementById('modal-overlay');
+      const content = document.getElementById('modal-content');
+      content.innerHTML = `
+        <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 12px;">Add Delivery Address</h3>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <input type="text" id="new-addr-label" placeholder="Address Label (e.g. Home, Office)" value="Home" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px;" />
+          <input type="text" id="new-addr-street" placeholder="Street / Chowk / House #" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px;" />
+          <input type="text" id="new-addr-city" placeholder="City" value="Kathmandu" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px;" />
+          <button class="primary-btn" onclick="saveNewAddress()">Save Address</button>
+        </div>
+      `;
+      modal.style.display = 'flex';
+    }
+
+    function saveNewAddress() {
+      const label = document.getElementById('new-addr-label').value.trim() || 'Home';
+      const address = document.getElementById('new-addr-street').value.trim();
+      const city = document.getElementById('new-addr-city').value.trim() || 'Kathmandu';
+      if (!address) {
+        showToast('Please enter your street address');
+        return;
+      }
+      APP_STATE.savedAddresses.unshift({
+        id: 'addr_' + Date.now(),
+        label,
+        address,
+        city
+      });
+      saveAddresses();
+      closeModal();
+      showToast('Address saved');
+      if (APP_STATE.currentRoute === '/account') renderAccountView(document.getElementById('app-view'));
+    }
+
+    function openLocationPicker() {
+      const modal = document.getElementById('modal-overlay');
+      const content = document.getElementById('modal-content');
+      content.innerHTML = `
+        <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 12px;">Select Delivery Location</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">⚡ Guaranteed 10-15 min express delivery across:</p>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${['Baneshwor, Kathmandu', 'Koteshwor, Kathmandu', 'Putalisadak, Kathmandu', 'Baluwatar, Kathmandu', 'Patan / Jhamsikhel, Lalitpur', 'Janakpur Dham, Dhanusha'].map(loc => `
+            <button onclick="setLocation('${loc}')" class="cat-chip" style="text-align: left; padding: 12px; justify-content: flex-start;">
+              <span>📍</span>
+              <span style="font-weight: 700;">${loc}</span>
+            </button>
+          `).join('')}
+        </div>
+      `;
+      modal.style.display = 'flex';
+    }
+
+    function setLocation(loc) {
+      showToast('Delivery location set to ' + loc);
+      closeModal();
     }
 
     function openAddProductModal() {

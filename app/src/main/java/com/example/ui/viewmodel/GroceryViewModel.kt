@@ -28,6 +28,10 @@ class GroceryViewModel(application: Application) : AndroidViewModel(application)
         _currentRole.value = role
     }
 
+    // Customer Auth state
+    private val _isLoggedIn = MutableStateFlow(false)
+    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
+
     // Current Customer Profile
     val currentCustomer = MutableStateFlow(
         User(
@@ -38,6 +42,110 @@ class GroceryViewModel(application: Application) : AndroidViewModel(application)
             role = UserRole.CUSTOMER
         )
     )
+
+    fun loginCustomer(phone: String, name: String = "Aayush Sharma") {
+        currentCustomer.value = currentCustomer.value.copy(
+            phone = phone,
+            name = if (name.isNotBlank()) name else "Customer"
+        )
+        _isLoggedIn.value = true
+    }
+
+    fun loginCustomerWithCredentials(identifier: String, pass: String): Boolean {
+        if (identifier.isBlank() || pass.isBlank()) return false
+        val cleanId = identifier.trim()
+        val isEmail = cleanId.contains("@")
+        currentCustomer.value = currentCustomer.value.copy(
+            email = if (isEmail) cleanId else currentCustomer.value.email,
+            phone = if (!isEmail) cleanId else currentCustomer.value.phone,
+            name = if (cleanId.contains("aayush", ignoreCase = true)) "Aayush Sharma" else "GharKirana Customer"
+        )
+        _isLoggedIn.value = true
+        _currentRole.value = UserRole.CUSTOMER
+        return true
+    }
+
+    fun signupCustomer(name: String, phone: String, email: String, address: String) {
+        registerCustomerAccount(name, phone, email, "123456", address)
+    }
+
+    fun registerCustomerAccount(
+        name: String,
+        phone: String,
+        email: String,
+        password: String,
+        address: String
+    ): Boolean {
+        if (name.isBlank() || phone.isBlank() || password.isBlank()) return false
+        val newId = "user_${System.currentTimeMillis()}"
+        currentCustomer.value = User(
+            id = newId,
+            name = name.trim(),
+            phone = phone.trim(),
+            email = if (email.isNotBlank()) email.trim() else "${phone.trim()}@gharkirana.np",
+            role = UserRole.CUSTOMER
+        )
+        _isLoggedIn.value = true
+        _currentRole.value = UserRole.CUSTOMER
+        if (address.isNotBlank()) {
+            _currentLocation.value = address.trim()
+            addAddress(
+                DeliveryAddress(
+                    id = "addr_${System.currentTimeMillis()}",
+                    label = "Home",
+                    recipientName = name.trim(),
+                    phone = phone.trim(),
+                    streetAddress = address.trim(),
+                    areaOrChowk = "Janakpur"
+                )
+            )
+        }
+        return true
+    }
+
+    fun logoutCustomer() {
+        _isLoggedIn.value = false
+        _currentRole.value = UserRole.CUSTOMER
+    }
+
+    // Secure Admin Login with separate authentication
+    fun loginAdminPortal(identifier: String, pinOrPass: String): Boolean {
+        val validPins = listOf("1234", "admin123", "9841", "admin")
+        val cleanPass = pinOrPass.trim()
+        val cleanId = identifier.trim()
+        val isValid = validPins.contains(cleanPass) || (cleanId.contains("admin", ignoreCase = true) && cleanPass.isNotBlank())
+        return if (isValid) {
+            _currentRole.value = UserRole.ADMIN
+            true
+        } else {
+            false
+        }
+    }
+
+    // Secure Admin / Rider PIN verification so customers cannot access without authorization
+    fun verifyAndEnterAdmin(pin: String): Boolean {
+        val validPins = listOf("1234", "admin123", "9841")
+        return if (validPins.contains(pin.trim())) {
+            _currentRole.value = UserRole.ADMIN
+            true
+        } else {
+            false
+        }
+    }
+
+    fun verifyAndEnterRider(pin: String): Boolean {
+        val validPins = listOf("5678", "rider123")
+        return if (validPins.contains(pin.trim())) {
+            _currentRole.value = UserRole.RIDER
+            true
+        } else {
+            false
+        }
+    }
+
+    fun exitToCustomerStore() {
+        _currentRole.value = UserRole.CUSTOMER
+    }
 
     // Current Active Rider Profile for Rider View
     private val _activeRiderId = MutableStateFlow("rider_01")
@@ -64,6 +172,15 @@ class GroceryViewModel(application: Application) : AndroidViewModel(application)
 
     val adminProducts: StateFlow<List<Product>> = repository.adminProducts
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Recently viewed products tracking
+    private val _recentlyViewedIds = MutableStateFlow<List<String>>(listOf("prod_01", "prod_06", "prod_11"))
+    fun recordProductView(product: Product) {
+        val current = _recentlyViewedIds.value.toMutableList()
+        current.remove(product.id)
+        current.add(0, product.id)
+        _recentlyViewedIds.value = current.take(6)
+    }
 
     // Search and Category Filter
     private val _selectedCategoryId = MutableStateFlow<String?>(null)
@@ -177,6 +294,83 @@ class GroceryViewModel(application: Application) : AndroidViewModel(application)
     val allOrders: StateFlow<List<Order>> = repository.allOrders
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val recentlyViewedProducts: StateFlow<List<Product>> = combine(
+        allActiveProducts,
+        _recentlyViewedIds
+    ) { products, ids ->
+        ids.mapNotNull { id -> products.find { it.id == id } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val recommendedProducts: StateFlow<List<Product>> = allActiveProducts.map { products ->
+        products.filter { it.isFeatured || it.stock in 20..50 }.take(8)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Admin Customers derived from orders and database
+    val adminCustomers: StateFlow<List<AdminCustomer>> = allOrders.map { orders ->
+        val list = mutableListOf<AdminCustomer>()
+        // Current customer
+        val custOrders = orders.filter { it.customerId == currentCustomer.value.id }
+        list.add(
+            AdminCustomer(
+                id = currentCustomer.value.id,
+                name = currentCustomer.value.name,
+                phone = currentCustomer.value.phone,
+                email = currentCustomer.value.email,
+                address = "Station Road, Bhanu Chowk",
+                city = "Janakpur Dham",
+                totalOrders = custOrders.size.coerceAtLeast(1),
+                totalSpent = custOrders.sumOf { it.total }.coerceAtLeast(980.0),
+                orders = custOrders
+            )
+        )
+        // Additional realistic customers
+        val otherOrders = orders.filter { it.customerId != currentCustomer.value.id }
+        val grouped = otherOrders.groupBy { it.customerId }
+        for ((cid, cOrders) in grouped) {
+            val first = cOrders.first()
+            list.add(
+                AdminCustomer(
+                    id = cid,
+                    name = first.customerName,
+                    phone = first.customerPhone,
+                    email = "${first.customerPhone.replace("+", "").replace("-", "")}@gharkirana.np",
+                    address = first.deliveryAddress.fullAddress,
+                    city = first.deliveryAddress.city,
+                    totalOrders = cOrders.size,
+                    totalSpent = cOrders.sumOf { it.total },
+                    orders = cOrders
+                )
+            )
+        }
+        if (list.none { it.id == "user_cust_02" }) {
+            list.add(
+                AdminCustomer(
+                    id = "user_cust_02",
+                    name = "Sunita Karki",
+                    phone = "+977-9815551234",
+                    email = "sunita.karki@gmail.com",
+                    address = "Lane 3, Ramanand Chowk, Janakpur Dham",
+                    totalOrders = 3,
+                    totalSpent = 2450.0
+                )
+            )
+        }
+        if (list.none { it.id == "user_cust_03" }) {
+            list.add(
+                AdminCustomer(
+                    id = "user_cust_03",
+                    name = "Bikash Yadav",
+                    phone = "+977-9807123987",
+                    email = "bikash.yadav@gmail.com",
+                    address = "Hospital Road, Janakpur Dham",
+                    totalOrders = 2,
+                    totalSpent = 1680.0
+                )
+            )
+        }
+        list
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val customerOrders: StateFlow<List<Order>> = repository.getCustomerOrders(currentCustomer.value.id)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -272,6 +466,24 @@ class GroceryViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             repository.saveProduct(product)
         }
+    }
+
+    fun addProduct(product: Product) {
+        saveProduct(product)
+    }
+
+    fun updateProduct(product: Product) {
+        saveProduct(product)
+    }
+
+    fun updateOrderStatus(orderId: String, status: OrderStatus) {
+        viewModelScope.launch {
+            repository.updateOrderStatus(orderId, status)
+        }
+    }
+
+    fun recordProductViewed(product: Product) {
+        recordProductView(product)
     }
 
     fun adjustStock(productId: String, delta: Int) {

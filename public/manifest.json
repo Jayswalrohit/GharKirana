@@ -33,31 +33,24 @@
   ],
   "shortcuts": [
     {
+      "name": "Browse Categories",
+      "short_name": "Categories",
+      "description": "Explore grocery categories",
+      "url": "/categories",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    },
+    {
       "name": "View Cart",
       "short_name": "Cart",
-      "description": "Open your grocery cart",
+      "description": "Open your grocery basket",
       "url": "/cart",
       "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
     },
     {
       "name": "My Orders",
       "short_name": "Orders",
-      "description": "Track ongoing deliveries",
+      "description": "Track ongoing kirana deliveries",
       "url": "/orders",
-      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
-    },
-    {
-      "name": "Admin Dashboard",
-      "short_name": "Admin",
-      "description": "Manage inventory and orders",
-      "url": "/admin",
-      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
-    },
-    {
-      "name": "Rider Portal",
-      "short_name": "Rider",
-      "description": "Delivery tasks for riders",
-      "url": "/rider",
       "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
     }
   ]

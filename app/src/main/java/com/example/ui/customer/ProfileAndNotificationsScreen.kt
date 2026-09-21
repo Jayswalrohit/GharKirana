@@ -35,15 +35,25 @@ fun ProfileAndNotificationsScreen(
     viewModel: GroceryViewModel,
     onBack: () -> Unit,
     onTrackOrder: (String) -> Unit,
+    onOpenLogin: () -> Unit = {},
+    onOpenAdminLogin: () -> Unit = {},
+    onEnterAdmin: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val customer by viewModel.currentCustomer.collectAsState()
     val orders by viewModel.customerOrders.collectAsState()
     val notifications by viewModel.notifications.collectAsState()
     val addresses by viewModel.addresses.collectAsState()
+    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
 
     var selectedTab by remember { mutableStateOf(0) } // 0: Orders, 1: Notifications, 2: Saved Addresses
     var showAddAddressDialog by remember { mutableStateOf(false) }
+
+    // Admin Verification Dialog State
+    var showAdminPinDialog by remember { mutableStateOf(false) }
+    var enteredPin by remember { mutableStateOf("") }
+    var pinError by remember { mutableStateOf<String?>(null) }
+    var targetRole by remember { mutableStateOf(com.example.data.model.UserRole.ADMIN) }
 
     Scaffold(
         topBar = {
@@ -81,29 +91,55 @@ fun ProfileAndNotificationsScreen(
                         modifier = Modifier
                             .size(54.dp)
                             .clip(CircleShape)
-                            .background(KiranaGreenPrimary),
+                            .background(if (isLoggedIn) KiranaGreenPrimary else MaterialTheme.colorScheme.surfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("🇳🇵", fontSize = 28.sp)
+                        if (isLoggedIn) {
+                            Text("🇳🇵", fontSize = 28.sp)
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Guest",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = customer.name,
+                            text = if (isLoggedIn) customer.name else "Guest Customer",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = customer.phone,
+                            text = if (isLoggedIn) customer.phone else "Not logged in",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "Janakpur Dham, Nepal",
+                            text = if (isLoggedIn) "Janakpur Dham, Nepal" else "⚡ Log in for 10-min fast delivery",
                             style = MaterialTheme.typography.labelSmall,
                             color = KiranaGreenPrimary,
                             fontWeight = FontWeight.SemiBold
                         )
+                    }
+
+                    if (!isLoggedIn) {
+                        Button(
+                            onClick = onOpenLogin,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = KiranaGreenPrimary)
+                        ) {
+                            Text("Log In", fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = { viewModel.logoutCustomer() },
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Log Out")
+                        }
                     }
                 }
             }
@@ -230,7 +266,117 @@ fun ProfileAndNotificationsScreen(
                     }
                 }
             }
+
+            // Discreet Staff & Admin Access Section at the very bottom
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 1.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Store Operations & Staff",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(
+                            onClick = {
+                                onOpenAdminLogin()
+                            }
+                        ) {
+                            Text("🔐 Admin Login", style = MaterialTheme.typography.labelSmall)
+                        }
+                        TextButton(
+                            onClick = {
+                                targetRole = com.example.data.model.UserRole.RIDER
+                                enteredPin = ""
+                                pinError = null
+                                showAdminPinDialog = true
+                            }
+                        ) {
+                            Text("🛵 Rider Login", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    // Admin / Rider Security PIN Verification Dialog
+    if (showAdminPinDialog) {
+        AlertDialog(
+            onDismissRequest = { showAdminPinDialog = false },
+            title = {
+                Text(
+                    text = if (targetRole == com.example.data.model.UserRole.ADMIN) "🔐 Store Admin Security PIN" else "🛵 Delivery Rider Login",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = if (targetRole == com.example.data.model.UserRole.ADMIN)
+                            "Customers cannot access the store admin panel. Please enter the authorized administrator PIN to proceed."
+                        else
+                            "Rider area is restricted to delivery partners. Enter rider security PIN to proceed.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    OutlinedTextField(
+                        value = enteredPin,
+                        onValueChange = {
+                            enteredPin = it
+                            pinError = null
+                        },
+                        label = { Text("Security PIN") },
+                        placeholder = { Text(if (targetRole == com.example.data.model.UserRole.ADMIN) "PIN: 1234" else "PIN: 5678") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (pinError != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = pinError ?: "",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val success = if (targetRole == com.example.data.model.UserRole.ADMIN) {
+                            viewModel.verifyAndEnterAdmin(enteredPin)
+                        } else {
+                            viewModel.verifyAndEnterRider(enteredPin)
+                        }
+                        if (success) {
+                            showAdminPinDialog = false
+                            onEnterAdmin()
+                        } else {
+                            pinError = "Access Denied: Invalid Security PIN!"
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = KiranaGreenPrimary)
+                ) {
+                    Text("Verify & Enter")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAdminPinDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     if (showAddAddressDialog) {

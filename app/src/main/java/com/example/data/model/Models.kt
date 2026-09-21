@@ -66,7 +66,9 @@ enum class OrderStatus(val title: String, val stepIndex: Int, val description: S
 
 enum class PaymentMethod(val displayName: String) {
     COD("Cash on Delivery"),
-    ESEWA("eSewa Mobile Wallet")
+    ESEWA("eSewa Mobile Wallet");
+
+    val title: String get() = displayName
 }
 
 enum class PaymentStatus {
@@ -122,7 +124,10 @@ data class Order(
     val assignedRiderPhone: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val estimatedMinutes: Int = 25
-)
+) {
+    val isPaid: Boolean
+        get() = paymentStatus == PaymentStatus.VERIFIED
+}
 
 data class Rider(
     val id: String,
@@ -156,7 +161,7 @@ data class AppNotification(
 )
 
 data class ShopSettings(
-    val shopName: String = "GharKirana Express",
+    val shopName: String = "GharKirana Nepal",
     val shopPhone: String = "+977-9800012345",
     val shopAddress: String = "Station Road, Bhanu Chowk, Janakpur Dham, Nepal",
     val openingHours: String = "6:00 AM - 10:00 PM (Daily)",
@@ -167,3 +172,17 @@ data class ShopSettings(
     val allowEsewa: Boolean = true,
     val esewaMerchantId: String = "EPAYTEST"
 )
+
+data class AdminCustomer(
+    val id: String,
+    val name: String,
+    val phone: String,
+    val email: String,
+    val address: String,
+    val city: String = "Janakpur Dham",
+    val totalOrders: Int,
+    val totalSpent: Double,
+    val lastOrderTime: Long = System.currentTimeMillis(),
+    val orders: List<Order> = emptyList()
+)
+

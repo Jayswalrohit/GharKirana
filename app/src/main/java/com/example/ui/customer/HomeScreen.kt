@@ -7,9 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,6 +32,7 @@ import com.example.R
 import com.example.data.model.Category
 import com.example.data.model.Product
 import com.example.ui.components.EmptyPlaceholder
+import com.example.ui.components.GharKiranaBrandLogo
 import com.example.ui.components.ProductImageView
 import com.example.ui.components.formatNpr
 import com.example.ui.theme.*
@@ -47,6 +45,7 @@ fun CustomerHomeScreen(
     onOpenCart: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenOrderTracking: (String) -> Unit,
+    onOpenLogin: () -> Unit = onOpenProfile,
     modifier: Modifier = Modifier
 ) {
     val currentLocation by viewModel.currentLocation.collectAsState()
@@ -55,9 +54,13 @@ fun CustomerHomeScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val filteredProducts by viewModel.filteredProducts.collectAsState()
     val discountOffers by viewModel.discountOffers.collectAsState()
+    val recommendedProducts by viewModel.recommendedProducts.collectAsState()
+    val recentlyViewedProducts by viewModel.recentlyViewedProducts.collectAsState()
     val cartItems by viewModel.cartItems.collectAsState()
     val cartTotal by viewModel.cartTotal.collectAsState()
     val customerOrders by viewModel.customerOrders.collectAsState()
+    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
+    val customer by viewModel.currentCustomer.collectAsState()
 
     var showLocationDialog by remember { mutableStateOf(false) }
     var selectedProductForDetail by remember { mutableStateOf<Product?>(null) }
@@ -71,82 +74,122 @@ fun CustomerHomeScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = if (cartItems.isNotEmpty() || activeOrder != null) 96.dp else 24.dp)
         ) {
-            // Header Location & Notification Bar
+            // 1. Authentic GharKirana Brand Header & Location Bar
             item {
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
                     tonalElevation = 2.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
+                        // Brand Logo row with Profile/Login button
                         Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { showLocationDialog = true },
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(KiranaGreenLight),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.LocationOn,
-                                    contentDescription = "Location",
-                                    tint = KiranaGreenPrimary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "Delivery in 25 mins",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = KiranaGreenPrimary
-                                    )
-                                    Icon(
-                                        imageVector = Icons.Default.KeyboardArrowDown,
-                                        contentDescription = "Select location",
-                                        tint = KiranaGreenPrimary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
+                            GharKiranaBrandLogo(
+                                showTagline = false
+                            )
+
+                            // Profile / Login Button
+                            if (!isLoggedIn) {
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = KiranaGreenPrimary,
+                                    modifier = Modifier.clickable { onOpenLogin() }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Person,
+                                            contentDescription = "Login",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "लगइन / Login",
+                                            color = Color.White,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
-                                Text(
-                                    text = currentLocation,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                            } else {
+                                IconButton(
+                                    onClick = onOpenProfile,
+                                    modifier = Modifier.testTag("profile_btn")
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(KiranaGreenLight),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = customer.name.firstOrNull()?.uppercase() ?: "U",
+                                            fontWeight = FontWeight.Bold,
+                                            color = KiranaGreenPrimary
+                                        )
+                                    }
+                                }
                             }
                         }
 
-                        // Profile & notification icon button
-                        IconButton(
-                            onClick = onOpenProfile,
-                            modifier = Modifier.testTag("profile_btn")
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Delivery Location Selector Pill
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showLocationDialog = true }
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                                contentAlignment = Alignment.Center
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocationOn,
+                                        contentDescription = "Delivery Location",
+                                        tint = KiranaGreenPrimary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Column {
+                                        Text(
+                                            text = "डेलिभरी ठेगाना / Deliver to:",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = currentLocation,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
                                 Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = "Profile",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Change Location",
+                                    tint = KiranaGreenPrimary,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
@@ -201,7 +244,7 @@ fun CustomerHomeScreen(
                 }
             }
 
-            // Search Bar
+            // 2. Search Bar
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                     OutlinedTextField(
@@ -211,13 +254,13 @@ fun CustomerHomeScreen(
                             .fillMaxWidth()
                             .testTag("search_input"),
                         placeholder = {
-                            Text("Search Basmati rice, Wai Wai, Dal, Ghee...")
+                            Text("खोज्नुहोस्: बासमती चामल, दाल, घिउ, धारा तेल, चाउचाउ...")
                         },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = "Search",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = KiranaGreenPrimary
                             )
                         },
                         trailingIcon = {
@@ -230,11 +273,11 @@ fun CustomerHomeScreen(
                                 }
                             }
                         },
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedBorderColor = KiranaGreenPrimary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         ),
                         singleLine = true
@@ -242,7 +285,7 @@ fun CustomerHomeScreen(
                 }
             }
 
-            // Hero Promotional Banner
+            // 3. GharKirana Heritage Banner
             if (searchQuery.isBlank() && selectedCategory == null) {
                 item {
                     Card(
@@ -266,8 +309,8 @@ fun CustomerHomeScreen(
                                     .background(
                                         Brush.horizontalGradient(
                                             colors = listOf(
-                                                Color.Black.copy(alpha = 0.75f),
-                                                Color.Black.copy(alpha = 0.25f)
+                                                Color.Black.copy(alpha = 0.82f),
+                                                Color.Black.copy(alpha = 0.35f)
                                             )
                                         )
                                     )
@@ -278,26 +321,26 @@ fun CustomerHomeScreen(
                                     .align(Alignment.CenterStart)
                             ) {
                                 Surface(
-                                    color = EsewaGreen,
+                                    color = KiranaGreenPrimary,
                                     shape = RoundedCornerShape(6.dp)
                                 ) {
                                     Text(
-                                        text = "🇳🇵 Janakpur Kirana Express",
+                                        text = "🇳🇵 मौलिक नेपाली किराना",
                                         color = Color.White,
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "Fresh Groceries to Doorstep",
+                                    text = "तपाईंको घर, हाम्रो किराना",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
                                 Text(
-                                    text = "COD & eSewa accepted • Free delivery over Rs. 899",
+                                    text = "Fresh Daily Groceries • eSewa & COD Accepted • Free delivery over Rs. 899",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color.White.copy(alpha = 0.9f)
                                 )
@@ -307,7 +350,7 @@ fun CustomerHomeScreen(
                 }
             }
 
-            // Category Chips Row
+            // 4. Attractive Grocery Categories
             item {
                 Column(modifier = Modifier.padding(vertical = 8.dp)) {
                     Row(
@@ -318,15 +361,17 @@ fun CustomerHomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Grocery Categories",
+                            text = "किराना विधा / Categories",
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = KiranaGreenDark
                         )
                         if (selectedCategory != null) {
                             Text(
                                 text = "Show All",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = KiranaGreenPrimary,
+                                fontWeight = FontWeight.Bold,
                                 modifier = Modifier.clickable { viewModel.selectCategory(null) }
                             )
                         }
@@ -338,7 +383,7 @@ fun CustomerHomeScreen(
                     ) {
                         item {
                             CategoryChipItem(
-                                title = "All Items",
+                                title = "सबै सामान",
                                 emoji = "🛍️",
                                 isSelected = selectedCategory == null,
                                 onClick = { viewModel.selectCategory(null) }
@@ -346,7 +391,7 @@ fun CustomerHomeScreen(
                         }
                         items(categories) { cat ->
                             CategoryChipItem(
-                                title = cat.name,
+                                title = if (cat.nepaliName.isNotBlank()) cat.nepaliName else cat.name,
                                 emoji = cat.emoji,
                                 isSelected = selectedCategory == cat.id,
                                 onClick = { viewModel.selectCategory(cat.id) }
@@ -356,7 +401,7 @@ fun CustomerHomeScreen(
                 }
             }
 
-            // Discount Deals Row (only when browsing all)
+            // 5. Today's Offers / Deals Section
             if (searchQuery.isBlank() && selectedCategory == null && discountOffers.isNotEmpty()) {
                 item {
                     Column(modifier = Modifier.padding(vertical = 8.dp)) {
@@ -369,9 +414,10 @@ fun CustomerHomeScreen(
                             Text("🔥", fontSize = 18.sp)
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Daily Kirana Offers",
+                                text = "आजको विशेष छुट / Today's Offers",
                                 style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = KiranaTerracotta
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Surface(
@@ -398,7 +444,10 @@ fun CustomerHomeScreen(
                                     cartQuantity = cartItems.find { it.product.id == product.id }?.quantity ?: 0,
                                     onAdd = { viewModel.addToCart(product) },
                                     onDecrement = { viewModel.decrementCart(product.id) },
-                                    onClick = { selectedProductForDetail = product }
+                                    onClick = {
+                                        viewModel.recordProductViewed(product)
+                                        selectedProductForDetail = product
+                                    }
                                 )
                             }
                         }
@@ -406,7 +455,89 @@ fun CustomerHomeScreen(
                 }
             }
 
-            // Section Title for Grid
+            // 6. Recommended Products Section
+            if (searchQuery.isBlank() && selectedCategory == null && recommendedProducts.isNotEmpty()) {
+                item {
+                    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("⭐", fontSize = 18.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "सिफारिस गरिएका / Recommended for You",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = KiranaGreenDark
+                            )
+                        }
+
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(recommendedProducts) { product ->
+                                ProductMiniOfferCard(
+                                    product = product,
+                                    cartQuantity = cartItems.find { it.product.id == product.id }?.quantity ?: 0,
+                                    onAdd = { viewModel.addToCart(product) },
+                                    onDecrement = { viewModel.decrementCart(product.id) },
+                                    onClick = {
+                                        viewModel.recordProductViewed(product)
+                                        selectedProductForDetail = product
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 7. Recently Viewed / Popular Kirana Staples Section
+            if (searchQuery.isBlank() && selectedCategory == null && recentlyViewedProducts.isNotEmpty()) {
+                item {
+                    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("🌾", fontSize = 18.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "लोकप्रिय किराना सामान / Popular Staples",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = KiranaGreenDark
+                            )
+                        }
+
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(recentlyViewedProducts) { product ->
+                                ProductMiniOfferCard(
+                                    product = product,
+                                    cartQuantity = cartItems.find { it.product.id == product.id }?.quantity ?: 0,
+                                    onAdd = { viewModel.addToCart(product) },
+                                    onDecrement = { viewModel.decrementCart(product.id) },
+                                    onClick = {
+                                        viewModel.recordProductViewed(product)
+                                        selectedProductForDetail = product
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 8. Main Product Grid Section Title
             item {
                 Row(
                     modifier = Modifier
@@ -416,14 +547,15 @@ fun CustomerHomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val title = when {
-                        searchQuery.isNotBlank() -> "Search Results (${filteredProducts.size})"
-                        selectedCategory != null -> categories.find { it.id == selectedCategory }?.let { "${it.emoji} ${it.name}" } ?: "Products"
-                        else -> "All Fresh Products (${filteredProducts.size})"
+                        searchQuery.isNotBlank() -> "खोज नतिजा / Search Results (${filteredProducts.size})"
+                        selectedCategory != null -> categories.find { it.id == selectedCategory }?.let { "${it.emoji} ${it.name} (${it.nepaliName})" } ?: "Products"
+                        else -> "सबै ताजा किराना / All Fresh Groceries (${filteredProducts.size})"
                     }
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = KiranaGreenDark
                     )
                 }
             }
@@ -433,12 +565,11 @@ fun CustomerHomeScreen(
                 item {
                     EmptyPlaceholder(
                         icon = { Text("🔍", fontSize = 32.sp) },
-                        title = "No products found",
-                        subtitle = "Try searching for rice, oil, noodles, or clear filters."
+                        title = "कुनै सामान भेटिएन / No Products Found",
+                        subtitle = "Try searching for Basmati rice, Wai Wai, Dal, or clear search."
                     )
                 }
             } else {
-                // Products list in pairs (2-column layout in LazyColumn)
                 val chunkedProducts = filteredProducts.chunked(2)
                 items(chunkedProducts) { rowProducts ->
                     Row(
@@ -454,7 +585,10 @@ fun CustomerHomeScreen(
                                     cartQuantity = cartItems.find { it.product.id == product.id }?.quantity ?: 0,
                                     onAdd = { viewModel.addToCart(product) },
                                     onDecrement = { viewModel.decrementCart(product.id) },
-                                    onClick = { selectedProductForDetail = product }
+                                    onClick = {
+                                        viewModel.recordProductViewed(product)
+                                        selectedProductForDetail = product
+                                    }
                                 )
                             }
                         }
@@ -466,7 +600,7 @@ fun CustomerHomeScreen(
             }
         }
 
-        // Floating Cart Bar (Instamart style)
+        // Floating Cart Summary Bar
         if (cartItems.isNotEmpty()) {
             Surface(
                 modifier = Modifier
@@ -493,9 +627,9 @@ fun CustomerHomeScreen(
                             color = Color.White
                         )
                         Text(
-                            text = "Extra charges may apply at checkout",
+                            text = "झोला हेर्नुहोस् • Tap to view basket",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.8f)
+                            color = Color.White.copy(alpha = 0.85f)
                         )
                     }
 
@@ -552,8 +686,8 @@ fun CategoryChipItem(
 ) {
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        color = if (isSelected) KiranaGreenPrimary else MaterialTheme.colorScheme.surface,
+        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
         modifier = Modifier.clickable(onClick = onClick)
     ) {
         Row(
@@ -566,7 +700,7 @@ fun CategoryChipItem(
                 text = title,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -589,11 +723,11 @@ fun ProductGridCard(
             .clickable(onClick = onClick)
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
-            // Top Badge row (Discount & Image)
+            // Image & Discount Badge
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(92.dp)
+                    .height(96.dp)
                     .clip(RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
@@ -606,7 +740,7 @@ fun ProductGridCard(
 
                 if (product.hasDiscount) {
                     Surface(
-                        color = ErrorRed,
+                        color = KiranaTerracotta,
                         shape = RoundedCornerShape(bottomEnd = 8.dp, topStart = 10.dp),
                         modifier = Modifier.align(Alignment.TopStart)
                     ) {
@@ -645,7 +779,7 @@ fun ProductGridCard(
 
             Spacer(modifier = Modifier.height(2.dp))
 
-            // Product Name
+            // Product Name (English & Nepali)
             Text(
                 text = product.name,
                 style = MaterialTheme.typography.bodyMedium,
@@ -696,7 +830,9 @@ fun ProductGridCard(
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = KiranaGreenPrimary),
-                        modifier = Modifier.height(34.dp).testTag("add_btn_${product.id}")
+                        modifier = Modifier
+                            .height(34.dp)
+                            .testTag("add_btn_${product.id}")
                     ) {
                         Text("ADD", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
@@ -710,7 +846,9 @@ fun ProductGridCard(
                     ) {
                         IconButton(
                             onClick = onDecrement,
-                            modifier = Modifier.size(28.dp).testTag("dec_btn_${product.id}")
+                            modifier = Modifier
+                                .size(28.dp)
+                                .testTag("dec_btn_${product.id}")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Remove,
@@ -728,7 +866,9 @@ fun ProductGridCard(
                         )
                         IconButton(
                             onClick = onAdd,
-                            modifier = Modifier.size(28.dp).testTag("inc_btn_${product.id}")
+                            modifier = Modifier
+                                .size(28.dp)
+                                .testTag("inc_btn_${product.id}")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Add,
@@ -774,19 +914,21 @@ fun ProductMiniOfferCard(
                     contentScale = ContentScale.Crop,
                     emojiSize = 28.sp
                 )
-                Surface(
-                    color = ErrorRed,
-                    shape = RoundedCornerShape(bottomEnd = 6.dp),
-                    modifier = Modifier.align(Alignment.TopStart)
-                ) {
-                    Text(
-                        text = "-${product.discountPercent}%",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                    )
+                if (product.hasDiscount) {
+                    Surface(
+                        color = KiranaTerracotta,
+                        shape = RoundedCornerShape(bottomEnd = 6.dp),
+                        modifier = Modifier.align(Alignment.TopStart)
+                    ) {
+                        Text(
+                            text = "-${product.discountPercent}%",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(6.dp))
@@ -852,7 +994,7 @@ fun ProductDetailDialog(
                 ) {
                     Icon(imageVector = Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Add to Cart • ${formatNpr(product.effectivePrice)}")
+                    Text("Add to Basket • ${formatNpr(product.effectivePrice)}")
                 }
             } else {
                 Row(
@@ -943,14 +1085,14 @@ fun ProductDetailDialog(
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "Brand: ${product.brand.ifBlank { "Local" }}",
+                        text = "Brand: ${product.brand.ifBlank { "Local Kirana" }}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = product.description.ifBlank { "Authentic fresh Kirana staple for everyday Nepali cooking." },
+                    text = product.description.ifBlank { "Fresh authentic grocery staple directly from local producers and mills for daily Nepali kitchen cooking." },
                     style = MaterialTheme.typography.bodySmall
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -963,10 +1105,10 @@ fun ProductDetailDialog(
                         modifier = Modifier.padding(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("⚡", fontSize = 16.sp)
+                        Text("🌾", fontSize = 16.sp)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "In Stock (${product.stock} units available) • 25 min delivery",
+                            text = "In Stock (${product.stock} units available) • Same-Day Doorstep Delivery",
                             style = MaterialTheme.typography.labelSmall,
                             color = KiranaGreenDark,
                             fontWeight = FontWeight.SemiBold
@@ -992,8 +1134,10 @@ fun LocationSelectionDialog(
         "Mills Area, Janakpur Dham",
         "Shiva Chowk, Janakpur Dham",
         "Mujelia, Janakpur Dham",
-        "New Baneshwor, Kathmandu Valley",
-        "Thamel, Kathmandu Valley"
+        "New Baneshwor, Kathmandu",
+        "Thamel, Kathmandu",
+        "Koteshwor, Kathmandu",
+        "Patan Dhoka, Lalitpur"
     )
 
     AlertDialog(
@@ -1005,7 +1149,7 @@ fun LocationSelectionDialog(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(imageVector = Icons.Default.LocationOn, contentDescription = null, tint = KiranaGreenPrimary)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Select Delivery Area", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Select Delivery Area / Chowk", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
         },
         text = {

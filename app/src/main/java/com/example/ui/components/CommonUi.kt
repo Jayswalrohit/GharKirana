@@ -31,114 +31,64 @@ fun formatNpr(amount: Double): String {
 }
 
 @Composable
-fun RoleSwitcherBar(
-    currentRole: UserRole,
-    onRoleSelect: (UserRole) -> Unit,
-    unreadNotifCount: Int = 0,
-    modifier: Modifier = Modifier
+fun GharKiranaBrandLogo(
+    modifier: Modifier = Modifier,
+    size: Int = 44,
+    showTagline: Boolean = true,
+    showNepaliSubtext: Boolean = showTagline
 ) {
-    Surface(
-        tonalElevation = 4.dp,
-        shadowElevation = 4.dp,
-        color = MaterialTheme.colorScheme.surface,
-        modifier = modifier.fillMaxWidth()
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = KiranaGreenPrimary,
+            modifier = Modifier.size(size.dp)
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(KiranaGreenPrimary),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("🇳🇵", fontSize = 14.sp)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = "GharKirana Express",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Janakpur Dham Kirana Network",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                // Switcher Pill Chips
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Text("🌾", fontSize = (size * 0.55).sp)
+            }
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "GharKirana",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                    color = KiranaGreenDark,
+                    letterSpacing = (-0.5).sp
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Surface(
+                    color = KiranaAmberLight,
+                    shape = RoundedCornerShape(4.dp)
                 ) {
-                    RoleChip(
-                        title = "Customer",
-                        emoji = "🛒",
-                        isSelected = currentRole == UserRole.CUSTOMER,
-                        onClick = { onRoleSelect(UserRole.CUSTOMER) },
-                        testTag = "role_customer_btn"
-                    )
-                    RoleChip(
-                        title = "Shop Admin",
-                        emoji = "🏪",
-                        isSelected = currentRole == UserRole.ADMIN,
-                        onClick = { onRoleSelect(UserRole.ADMIN) },
-                        testTag = "role_admin_btn"
-                    )
-                    RoleChip(
-                        title = "Rider",
-                        emoji = "🛵",
-                        isSelected = currentRole == UserRole.RIDER,
-                        onClick = { onRoleSelect(UserRole.RIDER) },
-                        testTag = "role_rider_btn"
+                    Text(
+                        text = "🇳🇵 नेपाल",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = KiranaAmberDark,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                     )
                 }
+            }
+            if (showNepaliSubtext) {
+                Text(
+                    text = "घर किराना • ताजा र शुद्ध",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = KiranaGreenDark.copy(alpha = 0.8f),
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
 }
 
-@Composable
-fun RoleChip(
-    title: String,
-    emoji: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    testTag: String
-) {
-    Box(
-        modifier = Modifier
-            .testTag(testTag)
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                if (isSelected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.surfaceVariant
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(emoji, fontSize = 12.sp)
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
 
 @Composable
 fun StatusBadge(status: OrderStatus, modifier: Modifier = Modifier) {
