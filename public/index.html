@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>GharKirana - Nepal Grocery Delivery</title>
+
+  <!-- PWA Manifest and Mobile Styling -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.jpg" />
+  <meta name="theme-color" content="#1B5E20" />
+  <meta name="description" content="Nepal's fast grocery and daily Kirana delivery platform. Basmati rice, mustard oil, Wai Wai, lentils, spices delivered right to your door." />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="GharKirana" />
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Firebase SDKs (Compat/Modular for high reliability) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+  <style>
+    :root {
+      --primary: #1B5E20;
+      --primary-light: #2E7D32;
+      --primary-soft: #E8F5E9;
+      --accent: #E65100;
+      --accent-soft: #FFF3E0;
+      --bg: #F5F7F5;
+      --surface: #FFFFFF;
+      --text: #1E293B;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+      --danger: #DC2626;
+      --success: #16A34A;
+      --radius: 12px;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 74px; /* Space for mobile nav */
+    }
+
+    /* Container constraint for desktop / tablet */
+    .app-container {
+      width: 100%;
+      max-width: 680px;
+      margin: 0 auto;
+      background: var(--surface);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 0 24px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Top Bar Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--primary);
+      color: white;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: white;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-logo svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .brand-text h1 {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+
+    .brand-text p {
+      font-size: 11px;
+      opacity: 0.85;
+      font-weight: 500;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .role-badge {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.2s;
+    }
+
+    .role-badge:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .search-box {
+      position: relative;
+      width: 100%;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 10px 14px 10px 38px;
+      border-radius: 10px;
+      border: none;
+      background: white;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .search-box span.icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94A3B8;
+      font-size: 16px;
+    }
+
+    /* PWA Install Banner */
+    #install-banner {
+      display: none;
+      background: linear-gradient(135deg, #1B5E20, #2E7D32);
+      color: white;
+      padding: 10px 16px;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      animation: slideDown 0.3s ease-out;
+    }
+
+    .install-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .install-info img {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: white;
+    }
+
+    .install-info h4 {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .install-info p {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+
+    .install-btn {
+      background: #FFA000;
+      color: #000;
+      border: none;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* Error and Notification Banner */
+    #toast-banner {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      background: #1E293B;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Content Area */
+    main {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: linear-gradient(135deg, #052e16 0%, #1B5E20 100%);
+      color: white;
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-content {
+      max-width: 65%;
+      z-index: 2;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: #F59E0B;
+      color: #000;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .hero-content h2 {
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 4px;
+    }
+
+    .hero-content p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .hero-graphic {
+      font-size: 48px;
+      user-select: none;
+    }
+
+    /* Categories Bar */
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .categories-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+
+    .categories-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .cat-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .cat-chip.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* Product Grid */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    @media (min-width: 520px) {
+      .products-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .product-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .product-card:active {
+      transform: scale(0.98);
+    }
+
+    .discount-tag {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: var(--danger);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      z-index: 2;
+    }
+
+    .product-thumb {
+      width: 100%;
+      height: 110px;
+      background: #F1F5F9;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .product-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .product-thumb .emoji-fallback {
+      font-size: 40px;
+    }
+
+    .product-info h3 {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 2px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .product-unit {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .product-price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .price-current {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .price-mrp {
+      font-size: 11px;
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .add-btn {
+      width: 100%;
+      background: var(--primary-soft);
+      color: var(--primary);
+      border: 1px solid rgba(27, 94, 32, 0.2);
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+
+    .add-btn:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .qty-counter {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--primary);
+      color: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .qty-counter button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .qty-counter span {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    /* Bottom Navigation */
+    nav.bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 60;
+      max-width: 680px;
+      margin: 0 auto;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.04);
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      position: relative;
+      flex: 1;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+    }
+
+    .nav-item span.icon {
+      font-size: 20px;
+    }
+
+    .nav-badge {
+      position: absolute;
+      top: -2px;
+      right: calc(50% - 16px);
+      background: var(--accent);
+      color: white;
+      font-size: 10px;
+      font-weight: 800;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
+    /* Modal Sheet Styles (Product Detail / Role Switch / Add Product) */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      animation: fadeIn 0.2s;
+    }
+
+    .modal-sheet {
+      background: var(--surface);
+      width: 100%;
+      max-width: 680px;
+      border-radius: 20px 20px 0 0;
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 20px;
+      position: relative;
+      animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sheet-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 16px;
+      background: #F1F5F9;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Cart & Checkout Views */
+    .cart-summary-box {
+      background: #F8FAFC;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .summary-row.total {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+      border-top: 1px dashed var(--border);
+      padding-top: 10px;
+    }
+
+    .primary-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      text-align: center;
+      transition: background 0.2s;
+    }
+
+    .primary-btn:hover {
+      background: var(--primary-light);
+    }
+
+    /* Order Tracking View */
+    .order-step-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: 16px 0;
+      position: relative;
+      padding-left: 28px;
+    }
+
+    .order-step-timeline::before {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 8px;
+      bottom: 8px;
+      width: 3px;
+      background: var(--border);
+    }
+
+    .timeline-step {
+      position: relative;
+    }
+
+    .step-dot {
+      position: absolute;
+      left: -28px;
+      top: 2px;
+      width: 24px;
+      height: 24px;
+      border-radius: 12px;
+      background: var(--border);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .timeline-step.completed .step-dot,
+    .timeline-step.active .step-dot {
+      background: var(--primary);
+    }
+
+    /* Admin and Rider Tables/Cards */
+    .dashboard-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-card .val {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .stat-card .lbl {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Shimmer Skeleton Loader */
+    .skeleton {
+      background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-100%); }
+      to { transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* 404 Page Style */
+    .not-found-card {
+      padding: 40px 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+    
+    <!-- Install PWA Banner -->
+    <div id="install-banner">
+      <div class="install-info">
+        <img src="/icons/icon-192.jpg" alt="GharKirana" />
+        <div>
+          <h4>Install GharKirana App</h4>
+          <p>Faster 30-min grocery delivery from your home screen</p>
+        </div>
+      </div>
+      <button class="install-btn" id="btn-install-pwa">Install</button>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast-banner">
+      <span id="toast-text">Message</span>
+    </div>
+
+    <!-- Top Navigation Header -->
+    <header>
+      <div class="header-top">
+        <div class="brand-group" onclick="navigateTo('/')">
+          <div class="brand-logo">
+            <svg viewBox="0 0 512 512" fill="none">
+              <rect width="512" height="512" rx="100" fill="#1B5E20"/>
+              <path d="M156 180 C156 124 200 80 256 80 C312 80 356 124 356 180" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round"/>
+              <rect x="116" y="180" width="280" height="240" rx="36" fill="#FFFFFF"/>
+              <circle cx="256" cy="300" r="40" fill="#E65100"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <h1>GharKirana</h1>
+            <p>📍 Baneshwor, Kathmandu ▾</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div class="role-badge" onclick="openRoleSwitcher()" title="Change Role">
+            <span id="role-badge-text">Customer</span> ▾
+          </div>
+        </div>
+      </div>
+
+      <!-- Search Input -->
+      <div class="search-box">
+        <span class="icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search rice, oil, Wai Wai, tea, dal..." oninput="handleSearch(this.value)" />
+      </div>
+    </header>
+
+    <!-- Dynamic SPA Route Content Mount Point -->
+    <main id="app-view">
+      <!-- Injected by router -->
+    </main>
+
+    <!-- Bottom Navigation Bar for Mobile-first Experience -->
+    <nav class="bottom-nav">
+      <a class="nav-item" id="nav-home" onclick="navigateTo('/')">
+        <span class="icon">🏠</span>
+        <span>Home</span>
+      </a>
+      <a class="nav-item" id="nav-cart" onclick="navigateTo('/cart')">
+        <span class="icon">🛒</span>
+        <span>Cart</span>
+        <span class="nav-badge" id="cart-counter" style="display:none;">0</span>
+      </a>
+      <a class="nav-item" id="nav-orders" onclick="navigateTo('/orders')">
+        <span class="icon">📦</span>
+        <span>Orders</span>
+      </a>
+      <a class="nav-item" id="nav-portal" onclick="handlePortalClick()">
+        <span class="icon" id="portal-icon">⚙️</span>
+        <span id="portal-label">Portal</span>
+      </a>
+    </nav>
+
+  </div>
+
+  <!-- Global Modal Sheet (Product Detail, Role Switch, Add/Edit) -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-sheet" id="modal-sheet" onclick="event.stopPropagation()">
+      <button class="sheet-close" onclick="closeModal()">✕</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. Application State & Real Nepal Kirana Seed Data
+       ========================================================================== */
+    const APP_STATE = {
+      role: 'customer', // customer, admin, rider
+      currentRoute: '/',
+      searchQuery: '',
+      selectedCategory: 'all',
+      cart: {}, // { productId: qty }
+      orders: [],
+      products: [],
+      categories: [
+        { id: 'all', name: 'All Kirana', emoji: '✨' },
+        { id: 'cat_rice_dal', name: 'Rice & Dal', emoji: '🍚' },
+        { id: 'cat_oil_ghee', name: 'Oil & Ghee', emoji: '🫒' },
+        { id: 'cat_instant', name: 'Noodles & Snacks', emoji: '🍜' },
+        { id: 'cat_drinks', name: 'Tea & Coffee', emoji: '☕' },
+        { id: 'cat_spices', name: 'Spices & Salt', emoji: '🧂' }
+      ]
+    };
+
+    const INITIAL_PRODUCTS = [
+      {
+        id: 'prod_1',
+        name: 'Hulas Premium Basmati Rice',
+        nepaliName: 'हुलास बासमती चामल',
+        categoryId: 'cat_rice_dal',
+        price: 760,
+        discountPrice: 690,
+        unit: '5 KG Bag',
+        brand: 'Hulas Nepal',
+        stock: 45,
+        image: '/images/rice.jpg',
+        emoji: '🍚',
+        description: 'Aged long-grain aromatic Basmati rice from the Terai plains. Fluffy, non-sticky grains ideal for daily dal bhat.'
+      },
+      {
+        id: 'prod_2',
+        name: 'Dhara Pure Mustard Oil',
+        nepaliName: 'धारा शुद्ध तोरीको तेल',
+        categoryId: 'cat_oil_ghee',
+        price: 310,
+        discountPrice: 285,
+        unit: '1 Litre Pouch',
+        brand: 'Dhara',
+        stock: 60,
+        image: '/images/oil.jpg',
+        emoji: '🫒',
+        description: '100% cold-pressed pungent mustard oil for traditional Nepali tarkari, curries, and dal tadka.'
+      },
+      {
+        id: 'prod_3',
+        name: 'Wai Wai Quick Chicken Noodles',
+        nepaliName: 'वाइ वाइ चिकेन चाउचाउ',
+        categoryId: 'cat_instant',
+        price: 30,
+        discountPrice: 25,
+        unit: '75g Pack',
+        brand: 'CG Foods Wai Wai',
+        stock: 120,
+        image: '/images/noodles.jpg',
+        emoji: '🍜',
+        description: 'Nepal’s beloved brown spiced instant noodles with chili seasoning and savory onion oil.'
+      },
+      {
+        id: 'prod_4',
+        name: 'Tokla CTC Gold Nepali Tea',
+        nepaliName: 'टोक्ला सीटीसी चियापत्ती',
+        categoryId: 'cat_drinks',
+        price: 330,
+        discountPrice: 295,
+        unit: '500g Box',
+        brand: 'Tokla Nepal',
+        stock: 35,
+        image: '/images/tea.jpg',
+        emoji: '☕',
+        description: 'Rich strong CTC black tea grown in Jhapa gardens. Delivers a bold golden cup with boiled milk.'
+      },
+      {
+        id: 'prod_5',
+        name: 'Fresh Red Musuro Dal',
+        nepaliName: 'रातो मुसुरो दाल',
+        categoryId: 'cat_rice_dal',
+        price: 180,
+        discountPrice: 160,
+        unit: '1 KG Pack',
+        brand: 'Janakpur Kirana',
+        stock: 50,
+        image: '/images/lentils.jpg',
+        emoji: '🍲',
+        description: 'Clean polished split red lentils. High protein, cooks quickly into delicious soothing daily dal.'
+      }
+    ];
+
+    /* ==========================================================================
+       2. Firestore & Firebase Integration (Zero hardcoded secrets)
+       ========================================================================== */
+    let db = null;
+    let auth = null;
+
+    function initFirebaseIntegration() {
+      try {
+        // Look for injected config or runtime environment
+        const firebaseConfig = window.__FIREBASE_CONFIG__ || {
+          apiKey: "AIzaSyFakeKeyForLocalHostingPreviewOnly",
+          authDomain: "gharkirana-nepal.firebaseapp.com",
+          projectId: "gharkirana-nepal",
+          storageBucket: "gharkirana-nepal.appspot.com",
+          appId: "1:350547420092:web:gharkiranapwa"
+        };
+
+        if (window.firebase && !firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+          db = firebase.firestore();
+          auth = firebase.auth();
+          console.log("Firebase initialized for GharKirana production deployment.");
+        }
+      } catch (err) {
+        console.warn("Firestore running in resilient offline/local mode:", err.message);
+      }
+
+      // Load products from LocalStorage or seed data
+      const savedProducts = localStorage.getItem('gk_products');
+      if (savedProducts) {
+        try {
+          APP_STATE.products = JSON.parse(savedProducts);
+        } catch(e) {
+          APP_STATE.products = INITIAL_PRODUCTS;
+        }
+      } else {
+        APP_STATE.products = INITIAL_PRODUCTS;
+        saveProducts();
+      }
+
+      // Load orders
+      const savedOrders = localStorage.getItem('gk_orders');
+      if (savedOrders) {
+        try {
+          APP_STATE.orders = JSON.parse(savedOrders);
+        } catch(e) {
+          APP_STATE.orders = [];
+        }
+      }
+
+      // Load cart
+      const savedCart = localStorage.getItem('gk_cart');
+      if (savedCart) {
+        try {
+          APP_STATE.cart = JSON.parse(savedCart);
+        } catch(e) {
+          APP_STATE.cart = {};
+        }
+      }
+      updateCartBadge();
+    }
+
+    function saveProducts() {
+      localStorage.setItem('gk_products', JSON.stringify(APP_STATE.products));
+    }
+
+    function saveOrders() {
+      localStorage.setItem('gk_orders', JSON.stringify(APP_STATE.orders));
+    }
+
+    function saveCart() {
+      localStorage.setItem('gk_cart', JSON.stringify(APP_STATE.cart));
+      updateCartBadge();
+    }
+
+    function showToast(message) {
+      const banner = document.getElementById('toast-banner');
+      const text = document.getElementById('toast-text');
+      text.innerText = message;
+      banner.style.display = 'flex';
+      setTimeout(() => {
+        banner.style.display = 'none';
+      }, 2600);
+    }
+
+    /* ==========================================================================
+       3. PWA Service Worker & Installation Logic
+       ========================================================================== */
+    let deferredPrompt = null;
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((reg) => console.log('ServiceWorker registered:', reg.scope))
+          .catch((err) => console.log('ServiceWorker registration note:', err));
+      });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const banner = document.getElementById('install-banner');
+      if (banner) banner.style.display = 'flex';
+    });
+
+    document.getElementById('btn-install-pwa').addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          showToast('Thank you for installing GharKirana!');
+        }
+        deferredPrompt = null;
+        document.getElementById('install-banner').style.display = 'none';
+      } else {
+        showToast('To install, tap Share / Settings -> Add to Home Screen');
+      }
+    });
+
+    /* ==========================================================================
+       4. Client-Side SPA Routing & 404 Handling
+       ========================================================================== */
+    function navigateTo(route) {
+      window.history.pushState({}, '', route);
+      handleRoute();
+    }
+
+    window.addEventListener('popstate', handleRoute);
+
+    function handleRoute() {
+      const path = window.location.pathname;
+      APP_STATE.currentRoute = path;
+
+      // Update active nav icons
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      if (path === '/' || path === '/home') {
+        document.getElementById('nav-home')?.classList.add('active');
+      } else if (path === '/cart') {
+        document.getElementById('nav-cart')?.classList.add('active');
+      } else if (path === '/orders') {
+        document.getElementById('nav-orders')?.classList.add('active');
+      } else if (path === '/admin' || path === '/rider') {
+        document.getElementById('nav-portal')?.classList.add('active');
+      }
+
+      // Router Switch
+      const appView = document.getElementById('app-view');
+      window.scrollTo(0, 0);
+
+      if (path === '/' || path === '/home') {
+        renderCustomerHome(appView);
+      } else if (path === '/cart') {
+        renderCartView(appView);
+      } else if (path === '/orders') {
+        renderOrdersView(appView);
+      } else if (path === '/admin') {
+        renderAdminDashboard(appView);
+      } else if (path === '/rider') {
+        renderRiderDashboard(appView);
+      } else if (path.startsWith('/product')) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const prodId = urlParams.get('id');
+        const product = APP_STATE.products.find(p => p.id === prodId);
+        if (product) {
+          renderCustomerHome(appView);
+          openProductModal(product);
+        } else {
+          render404View(appView);
+        }
+      } else {
+        render404View(appView);
+      }
+    }
+
+    function render404View(container) {
+      container.innerHTML = `
+        <div class="not-found-card">
+          <span style="font-size: 64px;">🛒❌</span>
+          <h2 style="font-size: 20px; font-weight: 800;">404 - Page Not Found</h2>
+          <p style="color: var(--text-muted); font-size: 14px; max-width: 320px;">
+            The kirana item or section you are looking for does not exist or has moved.
+          </p>
+          <button class="primary-btn" onclick="navigateTo('/')" style="max-width: 220px; margin-top: 10px;">
+            Return to Groceries
+          </button>
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       5. Customer Home View
+       ========================================================================== */
+    function renderCustomerHome(container) {
+      const filtered = APP_STATE.products.filter(p => {
+        const matchCat = APP_STATE.selectedCategory === 'all' || p.categoryId === APP_STATE.selectedCategory;
+        const query = APP_STATE.searchQuery.toLowerCase().trim();
+        const matchQuery = !query || 
+          p.name.toLowerCase().includes(query) || 
+          (p.nepaliName && p.nepaliName.includes(query)) ||
+          p.brand.toLowerCase().includes(query);
+        return matchCat && matchQuery;
+      });
+
+      container.innerHTML = `
+        <!-- Hero Delivery Banner -->
+        <div class="hero-banner">
+          <div class="hero-content">
+            <span class="hero-badge">⚡ 30-Min Fast Delivery</span>
+            <h2>Fresh Kirana to Your Kitchen</h2>
+            <p>Kathmandu Valley • Free delivery on orders over Rs. 499</p>
+          </div>
+          <div class="hero-graphic">🥦</div>
+        </div>
+
+        <!-- Categories Row -->
+        <div>
+          <div class="section-title">
+            <span>Categories</span>
+            <span style="font-size: 12px; color: var(--primary); font-weight: 600; cursor:pointer;" onclick="setCategory('all')">View All</span>
+          </div>
+          <div class="categories-row" style="margin-top: 8px;">
+            ${APP_STATE.categories.map(c => `
+              <div class="cat-chip ${APP_STATE.selectedCategory === c.id ? 'active' : ''}" onclick="setCategory('${c.id}')">
+                <span>${c.emoji}</span>
+                <span>${c.name}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Product Catalog -->
+        <div>
+          <div class="section-title">
+            <span>Kirana Essentials (${filtered.length})</span>
+            <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Best Prices in Nepal</span>
+          </div>
+          <div class="products-grid" style="margin-top: 10px;">
+            ${filtered.length === 0 ? `
+              <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+                <p style="font-size: 36px;">🔍</p>
+                <p style="font-weight: 600; margin-top: 8px;">No grocery items found</p>
+                <p style="font-size: 12px;">Try searching for 'rice', 'oil', or 'tea'</p>
+              </div>
+            ` : filtered.map(product => {
+              const qty = APP_STATE.cart[product.id] || 0;
+              const discountPercent = product.price > product.discountPrice ? 
+                Math.round(((product.price - product.discountPrice) / product.price) * 100) : 0;
+
+              return `
+                <div class="product-card">
+                  ${discountPercent > 0 ? `<div class="discount-tag">-${discountPercent}%</div>` : ''}
+                  
+                  <div class="product-thumb" onclick="openProductModalById('${product.id}')">
+                    ${product.image ? `
+                      <img src="${product.image}" alt="${product.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                      <span class="emoji-fallback" style="display:none;">${product.emoji}</span>
+                    ` : `
+                      <span class="emoji-fallback">${product.emoji}</span>
+                    `}
+                  </div>
+
+                  <div class="product-info" onclick="openProductModalById('${product.id}')" style="cursor: pointer;">
+                    <h3>${product.name}</h3>
+                    <p class="product-unit">${product.unit} • ${product.brand}</p>
+                    <div class="product-price-row">
+                      <span class="price-current">Rs. ${product.discountPrice || product.price}</span>
+                      ${product.discountPrice && product.discountPrice < product.price ? `
+                        <span class="price-mrp">Rs. ${product.price}</span>
+                      ` : ''}
+                    </div>
+                  </div>
+
+                  <div id="btn-container-${product.id}">
+                    ${qty > 0 ? `
+                      <div class="qty-counter">
+                        <button onclick="decrementCart('${product.id}')">−</button>
+                        <span>${qty}</span>
+                        <button onclick="incrementCart('${product.id}')">+</button>
+                      </div>
+                    ` : `
+                      <button class="add-btn" onclick="incrementCart('${product.id}')">
+                        <span>+</span>
+                        <span>Add</span>
+                      </button>
+                    `}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function setCategory(catId) {
+      APP_STATE.selectedCategory = catId;
+      renderCustomerHome(document.getElementById('app-view'));
+    }
+
+    function handleSearch(val) {
+      APP_STATE.searchQuery = val;
+      if (APP_STATE.currentRoute === '/' || APP_STATE.currentRoute === '/home') {
+        renderCustomerHome(document.getElementById('app-view'));
+      }
+    }
+
+    /* ==========================================================================
+       6. Cart Management & Checkout
+       ========================================================================== */
+    function incrementCart(productId) {
+      const curr = APP_STATE.cart[productId] || 0;
+      APP_STATE.cart[productId] = curr + 1;
+      saveCart();
+      refreshProductButton(productId);
+      showToast('Item added to cart');
+    }
+
+    function decrementCart(productId) {
+      const curr = APP_STATE.cart[productId] || 0;
+      if (curr <= 1) {
+        delete APP_STATE.cart[productId];
+      } else {
+        APP_STATE.cart[productId] = curr - 1;
+      }
+      saveCart();
+      refreshProductButton(productId);
+      if (APP_STATE.currentRoute === '/cart') {
+        renderCartView(document.getElementById('app-view'));
+      }
+    }
+
+    function refreshProductButton(productId) {
+      const container = document.getElementById(`btn-container-${productId}`);
+      if (!container) return;
+      const qty = APP_STATE.cart[productId] || 0;
+      if (qty > 0) {
+        container.innerHTML = `
+          <div class="qty-counter">
+            <button onclick="decrementCart('${productId}')">−</button>
+            <span>${qty}</span>
+            <button onclick="incrementCart('${productId}')">+</button>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <button class="add-btn" onclick="incrementCart('${productId}')">
+            <span>+</span>
+            <span>Add</span>
+          </button>
+        `;
+      }
+    }
+
+    function updateCartBadge() {
+      const badge = document.getElementById('cart-counter');
+      const totalCount = Object.values(APP_STATE.cart).reduce((sum, q) => sum + q, 0);
+      if (totalCount > 0) {
+        badge.innerText = totalCount;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    function renderCartView(container) {
+      const items = Object.entries(APP_STATE.cart).map(([id, qty]) => {
+        const prod = APP_STATE.products.find(p => p.id === id);
+        return prod ? { ...prod, qty } : null;
+      }).filter(Boolean);
+
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="not-found-card">
+            <span style="font-size: 56px;">🛒</span>
+            <h2 style="font-size: 18px; font-weight: 800;">Your Kirana Basket is Empty</h2>
+            <p style="color: var(--text-muted); font-size: 13px;">Add fresh staples like rice, cooking oil, and lentils to place an order.</p>
+            <button class="primary-btn" onclick="navigateTo('/')" style="max-width: 220px; margin-top: 10px;">
+              Start Shopping
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      const subtotal = items.reduce((sum, item) => sum + ((item.discountPrice || item.price) * item.qty), 0);
+      const deliveryFee = subtotal >= 499 ? 0 : 50;
+      const total = subtotal + deliveryFee;
+
+      container.innerHTML = `
+        <div class="section-title">
+          <span>Review Basket (${items.length} items)</span>
+          <span style="font-size: 12px; color: var(--danger); cursor: pointer;" onclick="clearCart()">Clear</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+          ${items.map(item => `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 44px; height: 44px; border-radius: 8px; background: #F1F5F9; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                  ${item.image ? `<img src="${item.image}" style="width:100%;height:100%;object-fit:cover;" />` : item.emoji}
+                </div>
+                <div>
+                  <h4 style="font-size: 13px; font-weight: 700;">${item.name}</h4>
+                  <p style="font-size: 11px; color: var(--text-muted);">${item.unit} • Rs. ${item.discountPrice || item.price}</p>
+                </div>
+              </div>
+
+              <div class="qty-counter" style="min-width: 80px;">
+                <button onclick="decrementCart('${item.id}')">−</button>
+                <span>${item.qty}</span>
+                <button onclick="incrementCart('${item.id}')">+</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- Bill & Address Box -->
+        <div class="cart-summary-box" style="margin-top: 16px;">
+          <div style="font-size: 13px; font-weight: 700; margin-bottom: 4px;">Delivery Address</div>
+          <div style="background: white; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <p style="font-weight: 600;">Home / Apartment</p>
+              <p style="color: var(--text-muted);">Shantinagar Gate, Baneshwor, Kathmandu</p>
+            </div>
+            <span style="color: var(--primary); font-weight: 700; cursor: pointer;">Edit</span>
+          </div>
+
+          <div style="font-size: 13px; font-weight: 700; margin-top: 10px;">Bill Details</div>
+          <div class="summary-row">
+            <span>Items Subtotal</span>
+            <span>Rs. ${subtotal}</span>
+          </div>
+          <div class="summary-row">
+            <span>Delivery Charge ${subtotal >= 499 ? '(Free over Rs. 499)' : ''}</span>
+            <span style="${deliveryFee === 0 ? 'color: var(--success); font-weight: 700;' : ''}">
+              ${deliveryFee === 0 ? 'FREE' : `Rs. ${deliveryFee}`}
+            </span>
+          </div>
+          <div class="summary-row total">
+            <span>To Pay (COD / eSewa)</span>
+            <span>Rs. ${total}</span>
+          </div>
+
+          <button class="primary-btn" onclick="placeOrder(${total})" style="margin-top: 8px;">
+            Place Order (Cash on Delivery)
+          </button>
+        </div>
+      `;
+    }
+
+    function clearCart() {
+      APP_STATE.cart = {};
+      saveCart();
+      renderCartView(document.getElementById('app-view'));
+    }
+
+    function placeOrder(amount) {
+      const orderId = 'GK-' + Math.floor(100000 + Math.random() * 900000);
+      const items = Object.entries(APP_STATE.cart).map(([id, qty]) => {
+        const prod = APP_STATE.products.find(p => p.id === id);
+        return { id, name: prod?.name || 'Item', qty, price: prod?.discountPrice || prod?.price || 0 };
+      });
+
+      const newOrder = {
+        id: orderId,
+        items,
+        totalAmount: amount,
+        customerName: 'Aayush Shrestha',
+        phone: '+977 9841234567',
+        address: 'Baneshwor, Kathmandu',
+        status: 'CONFIRMED', // CONFIRMED, PACKED, OUT_FOR_DELIVERY, DELIVERED
+        placedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        riderName: 'Bikash Tamang (+977 9801234567)'
+      };
+
+      APP_STATE.orders.unshift(newOrder);
+      saveOrders();
+      APP_STATE.cart = {};
+      saveCart();
+
+      showToast('Order placed successfully!');
+      navigateTo('/orders');
+    }
+
+    /* ==========================================================================
+       7. Orders Tracking View
+       ========================================================================== */
+    function renderOrdersView(container) {
+      if (APP_STATE.orders.length === 0) {
+        container.innerHTML = `
+          <div class="not-found-card">
+            <span style="font-size: 56px;">📦</span>
+            <h2 style="font-size: 18px; font-weight: 800;">No Recent Orders</h2>
+            <p style="color: var(--text-muted); font-size: 13px;">Your grocery deliveries and past bills will appear here.</p>
+            <button class="primary-btn" onclick="navigateTo('/')" style="max-width: 220px; margin-top: 10px;">
+              Order Groceries
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="section-title">
+          <span>Active & Past Orders (${APP_STATE.orders.length})</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 12px;">
+          ${APP_STATE.orders.map(order => `
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <div>
+                  <h3 style="font-size: 14px; font-weight: 800;">Order #${order.id}</h3>
+                  <p style="font-size: 11px; color: var(--text-muted);">Placed at ${order.placedAt} • Rs. ${order.totalAmount}</p>
+                </div>
+                <span style="font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px; background: var(--primary-soft); color: var(--primary);">
+                  ${order.status}
+                </span>
+              </div>
+
+              <!-- Timeline -->
+              <div class="order-step-timeline">
+                <div class="timeline-step completed">
+                  <div class="step-dot">✓</div>
+                  <div style="font-size: 12px; font-weight: 700;">Order Placed & Confirmed</div>
+                  <div style="font-size: 11px; color: var(--text-muted);">GharKirana Hub has received your grocery list</div>
+                </div>
+                <div class="timeline-step ${order.status !== 'CONFIRMED' ? 'completed' : 'active'}">
+                  <div class="step-dot">2</div>
+                  <div style="font-size: 12px; font-weight: 700;">Packed at Kirana Store</div>
+                  <div style="font-size: 11px; color: var(--text-muted);">Freshly weighed and sealed in eco-bags</div>
+                </div>
+                <div class="timeline-step ${order.status === 'OUT_FOR_DELIVERY' || order.status === 'DELIVERED' ? 'completed' : ''}">
+                  <div class="step-dot">3</div>
+                  <div style="font-size: 12px; font-weight: 700;">Rider on the Way</div>
+                  <div style="font-size: 11px; color: var(--text-muted);">${order.riderName}</div>
+                </div>
+              </div>
+
+              <div style="background: #F8FAFC; border-radius: 8px; padding: 8px 12px; font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between;">
+                <span>Delivery Destination: ${order.address}</span>
+                <span style="color: var(--primary); font-weight: 700; cursor: pointer;" onclick="showToast('Rider notified!')">Call Rider</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       8. Admin Dashboard View
+       ========================================================================== */
+    function renderAdminDashboard(container) {
+      container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="section-title">Store Admin Dashboard</div>
+          <button class="primary-btn" onclick="openAddProductModal()" style="width: auto; padding: 6px 14px; font-size: 12px;">
+            + Add Product
+          </button>
+        </div>
+
+        <!-- KPI Metrics -->
+        <div class="dashboard-stats" style="margin-top: 12px;">
+          <div class="stat-card">
+            <div class="val">${APP_STATE.products.length}</div>
+            <div class="lbl">Products</div>
+          </div>
+          <div class="stat-card">
+            <div class="val">${APP_STATE.orders.length}</div>
+            <div class="lbl">Orders Today</div>
+          </div>
+          <div class="stat-card">
+            <div class="val">Rs. ${APP_STATE.orders.reduce((sum, o) => sum + o.totalAmount, 0)}</div>
+            <div class="lbl">Revenue</div>
+          </div>
+        </div>
+
+        <!-- Inventory List -->
+        <div class="section-title" style="margin-top: 16px;">
+          <span>Live Kirana Stock (${APP_STATE.products.length})</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+          ${APP_STATE.products.map(p => `
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 38px; height: 38px; border-radius: 6px; background: #F1F5F9; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                  ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;" />` : p.emoji}
+                </div>
+                <div>
+                  <h4 style="font-size: 13px; font-weight: 700;">${p.name}</h4>
+                  <p style="font-size: 11px; color: var(--text-muted);">${p.unit} • Stock: ${p.stock} units</p>
+                </div>
+              </div>
+
+              <div style="text-align: right;">
+                <div style="font-size: 13px; font-weight: 800; color: var(--primary);">Rs. ${p.discountPrice || p.price}</div>
+                <div style="font-size: 10px; color: var(--text-muted);">MRP: Rs. ${p.price}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       9. Rider Portal View
+       ========================================================================== */
+    function renderRiderDashboard(container) {
+      container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="section-title">Delivery Partner Portal</div>
+          <span style="font-size: 11px; font-weight: 700; background: #DCFCE7; color: #166534; padding: 4px 8px; border-radius: 12px;">● On Duty</span>
+        </div>
+
+        <!-- Rider Map / Task Card -->
+        <div style="background: linear-gradient(135deg, #0F172A, #1E293B); color: white; border-radius: var(--radius); padding: 16px; margin-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12px; font-weight: 600; color: #38BDF8;">Assigned Delivery #GK-8821</span>
+            <span style="font-size: 12px; font-weight: 800; color: #4ADE80;">Rs. 975 (Cash on Delivery)</span>
+          </div>
+          <h3 style="font-size: 15px; font-weight: 800; margin-top: 6px;">Drop: Shantinagar, Baneshwor</h3>
+          <p style="font-size: 12px; opacity: 0.8; margin-top: 2px;">Customer: Aayush Shrestha (+977 9841234567)</p>
+
+          <div style="display: flex; gap: 8px; margin-top: 14px;">
+            <button class="primary-btn" onclick="showToast('Calling customer...')" style="flex: 1; padding: 8px; font-size: 12px; background: #3B82F6;">
+              📞 Call Customer
+            </button>
+            <button class="primary-btn" onclick="showToast('Delivery marked as completed!')" style="flex: 1; padding: 8px; font-size: 12px; background: #16A34A;">
+              ✓ Mark Delivered
+            </button>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-top: 16px;">
+          <span>Completed Deliveries Today (8)</span>
+        </div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Total earnings today: Rs. 1,450 (including tips)</p>
+      `;
+    }
+
+    /* ==========================================================================
+       10. Modal Sheets & Actions
+       ========================================================================== */
+    function openProductModalById(id) {
+      const prod = APP_STATE.products.find(p => p.id === id);
+      if (prod) openProductModal(prod);
+    }
+
+    function openProductModal(product) {
+      const modal = document.getElementById('modal-overlay');
+      const content = document.getElementById('modal-content');
+      const qty = APP_STATE.cart[product.id] || 0;
+      const discountPercent = product.price > product.discountPrice ? 
+        Math.round(((product.price - product.discountPrice) / product.price) * 100) : 0;
+
+      content.innerHTML = `
+        <div style="width: 100%; height: 180px; border-radius: 12px; background: #F1F5F9; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
+          ${product.image ? `<img src="${product.image}" style="width:100%;height:100%;object-fit:cover;" />` : `<span style="font-size:56px;">${product.emoji}</span>`}
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <h2 style="font-size: 17px; font-weight: 800;">${product.name}</h2>
+            ${product.nepaliName ? `<p style="font-size: 13px; color: var(--text-muted);">${product.nepaliName}</p>` : ''}
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Pack: ${product.unit} • Brand: ${product.brand}</p>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 18px; font-weight: 800; color: var(--primary);">Rs. ${product.discountPrice || product.price}</div>
+            ${product.discountPrice && product.discountPrice < product.price ? `
+              <div style="font-size: 12px; text-decoration: line-through; color: var(--text-muted);">Rs. ${product.price}</div>
+              <span style="font-size: 11px; font-weight: 700; color: var(--danger);">Save ${discountPercent}%</span>
+            ` : ''}
+          </div>
+        </div>
+
+        <p style="font-size: 13px; line-height: 1.5; color: var(--text); margin: 14px 0;">
+          ${product.description}
+        </p>
+
+        <button class="primary-btn" onclick="incrementCart('${product.id}'); closeModal();">
+          ${qty > 0 ? `Add Another (Currently ${qty} in Basket)` : `Add to Basket • Rs. ${product.discountPrice || product.price}`}
+        </button>
+      `;
+      modal.style.display = 'flex';
+    }
+
+    function openRoleSwitcher() {
+      const modal = document.getElementById('modal-overlay');
+      const content = document.getElementById('modal-content');
+      content.innerHTML = `
+        <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 12px;">Switch User Role</h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+          Experience all three workflows designed for Nepal grocery operations:
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button class="cat-chip ${APP_STATE.role === 'customer' ? 'active' : ''}" onclick="setRole('customer')">
+            🛒 Customer View (Browse, Order, Track)
+          </button>
+          <button class="cat-chip ${APP_STATE.role === 'admin' ? 'active' : ''}" onclick="setRole('admin')">
+            ⚙️ Store Admin (Stock, Prices, Orders)
+          </button>
+          <button class="cat-chip ${APP_STATE.role === 'rider' ? 'active' : ''}" onclick="setRole('rider')">
+            🛵 Delivery Rider (Tasks, Drop Navigation)
+          </button>
+        </div>
+      `;
+      modal.style.display = 'flex';
+    }
+
+    function setRole(newRole) {
+      APP_STATE.role = newRole;
+      document.getElementById('role-badge-text').innerText = newRole.toUpperCase();
+      document.getElementById('portal-label').innerText = newRole === 'admin' ? 'Admin' : (newRole === 'rider' ? 'Rider' : 'Portal');
+      closeModal();
+      if (newRole === 'admin') navigateTo('/admin');
+      else if (newRole === 'rider') navigateTo('/rider');
+      else navigateTo('/');
+    }
+
+    function handlePortalClick() {
+      if (APP_STATE.role === 'admin') {
+        navigateTo('/admin');
+      } else if (APP_STATE.role === 'rider') {
+        navigateTo('/rider');
+      } else {
+        openRoleSwitcher();
+      }
+    }
+
+    function openAddProductModal() {
+      const modal = document.getElementById('modal-overlay');
+      const content = document.getElementById('modal-content');
+      content.innerHTML = `
+        <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 12px;">Add Product to Kirana Inventory</h3>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <input type="text" id="new-name" placeholder="Product Name (e.g. Aashirvaad Shuddh Atta)" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px;" />
+          <div style="display: flex; gap: 8px;">
+            <input type="number" id="new-price" placeholder="MRP (Rs.)" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; flex: 1;" />
+            <input type="number" id="new-discount" placeholder="Offer Price (Rs.)" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; flex: 1;" />
+          </div>
+          <input type="text" id="new-unit" placeholder="Unit (e.g. 5 KG Bag, 1 Litre)" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px;" />
+          <input type="text" id="new-brand" placeholder="Brand (e.g. Aashirvaad)" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px;" />
+          <button class="primary-btn" onclick="saveNewProduct()">Save Product</button>
+        </div>
+      `;
+      modal.style.display = 'flex';
+    }
+
+    function saveNewProduct() {
+      const name = document.getElementById('new-name').value;
+      const price = parseFloat(document.getElementById('new-price').value) || 100;
+      const discountPrice = parseFloat(document.getElementById('new-discount').value) || price;
+      const unit = document.getElementById('new-unit').value || '1 Unit';
+      const brand = document.getElementById('new-brand').value || 'Kirana';
+
+      if (!name) {
+        alert('Please enter a product name');
+        return;
+      }
+
+      const newProd = {
+        id: 'prod_' + Date.now(),
+        name,
+        categoryId: 'cat_rice_dal',
+        price,
+        discountPrice,
+        unit,
+        brand,
+        stock: 25,
+        emoji: '📦',
+        description: 'Quality Kirana staple sourced fresh.'
+      };
+
+      APP_STATE.products.unshift(newProd);
+      saveProducts();
+      closeModal();
+      showToast('Product added to inventory');
+      renderAdminDashboard(document.getElementById('app-view'));
+    }
+
+    function closeModal(e) {
+      document.getElementById('modal-overlay').style.display = 'none';
+    }
+
+    /* Initialize Application on DOM Ready */
+    document.addEventListener('DOMContentLoaded', () => {
+      initFirebaseIntegration();
+      handleRoute();
+    });
+  </script>
+</body>
+</html>

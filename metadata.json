@@ -1,0 +1,7 @@
+{
+  "name": "GharKirana",
+  "description": "Nepal grocery and Kirana delivery platform for fresh groceries, instant orders, shop management, and rider delivery workflows.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
